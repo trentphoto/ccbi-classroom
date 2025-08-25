@@ -2,17 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
-import { Class, User, Lesson, Submission, UserRole } from '@/types/db';
+import { User, UserRole } from '@/types/db';
 import Image from 'next/image';
 import { 
   sampleUsers, 
   sampleClasses, 
-  sampleLessons, 
   sampleSubmissions,
-  sampleEnrollments,
   getStudentsByClass,
-  getLessonsByClass,
-  getSubmissionsByLesson
+  getLessonsByClass
 } from '@/lib/sample-data';
 import { getTeacherConversations } from '@/lib/messaging';
 import ChatInterface from './ChatInterface';
@@ -21,9 +18,9 @@ import { addUser, updateUser } from '@/lib/user-management';
 
 // Use sample data
 const mockClasses = sampleClasses;
-const mockUsers = sampleUsers;
-const mockEnrollments = sampleEnrollments;
-const mockLessons = sampleLessons;
+// const mockUsers = sampleUsers; // Unused variable
+// const mockEnrollments = sampleEnrollments; // Unused variable
+// const mockLessons = sampleLessons; // Unused variable
 const mockSubmissions = sampleSubmissions;
 
 type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'messages';
@@ -72,7 +69,7 @@ export default function AdminDashboard() {
     } else {
       setSelectedConversation(null);
     }
-  }, [selectedClassId, classConversations.length]);
+  }, [selectedClassId, classConversations]);
   
   // Get the currently selected conversation
   const currentConversation = classConversations.find(conv => conv.id === selectedConversation) || 

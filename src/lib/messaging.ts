@@ -1,8 +1,6 @@
 import { 
   Conversation, 
   Message, 
-  User, 
-  Class, 
   ConversationWithMessages
 } from '@/types/db';
 import { 

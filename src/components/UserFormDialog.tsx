@@ -26,7 +26,7 @@ export default function UserFormDialog({
   open,
   onOpenChange,
   user,
-  selectedClassId,
+  // selectedClassId, // Unused variable
   onSubmit,
   mode
 }: UserFormDialogProps) {

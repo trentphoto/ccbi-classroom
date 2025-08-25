@@ -2,13 +2,12 @@
 
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { User, Class, Lesson, Submission, UserRole } from '@/types/db';
+// import { User } from '@/types/db'; // Unused import
 import Image from 'next/image';
 import { 
   sampleUsers, 
   sampleClasses, 
   sampleLessons, 
-  sampleSubmissions,
   getCurrentUser,
   getEnrolledClass,
   getLessonsByClass,
