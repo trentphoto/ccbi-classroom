@@ -36,34 +36,54 @@ export class DatabaseService {
   }
 
   async createClass(classData: Omit<Class, 'id' | 'created_at' | 'updated_at'>): Promise<Class> {
-    const { data, error } = await this.supabase
-      .from('classes')
-      .insert([classData])
-      .select()
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from('classes')
+        .insert([classData])
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error creating class:', error);
-      throw new Error('Failed to create class');
+      if (error) {
+        console.error('Error creating class:', error);
+        throw new Error(`Failed to create class: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('No data returned from class creation');
+        throw new Error('No data returned from class creation');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Exception in createClass:', error);
+      throw error;
     }
-
-    return data;
   }
 
   async updateClass(id: string, updates: Partial<Omit<Class, 'id' | 'created_at'>>): Promise<Class> {
-    const { data, error } = await this.supabase
-      .from('classes')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from('classes')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error updating class:', error);
-      throw new Error('Failed to update class');
+      if (error) {
+        console.error('Error updating class:', error);
+        throw new Error(`Failed to update class: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('No data returned from class update');
+        throw new Error('No data returned from class update');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Exception in updateClass:', error);
+      throw error;
     }
-
-    return data;
   }
 
   async deleteClass(id: string): Promise<void> {
@@ -109,34 +129,110 @@ export class DatabaseService {
   }
 
   async createUser(userData: Omit<User, 'id' | 'created_at'>): Promise<User> {
-    const { data, error } = await this.supabase
-      .from('users')
-      .insert([userData])
-      .select()
-      .single();
+    try {
+      console.log('Starting createUser process for:', userData.email);
 
-    if (error) {
-      console.error('Error creating user:', error);
-      throw new Error('Failed to create user');
+      // First, create the user account via Supabase Auth
+      console.log('Step 1: Creating auth account...');
+      const { data: authData, error: authError } = await this.supabase.auth.signUp({
+        email: userData.email,
+        password: 'TempPass123!', // Temporary password - user will need to reset
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role
+          }
+        }
+      });
+
+      console.log('Auth result:', { user: authData?.user?.id, error: authError });
+
+      if (authError) {
+        console.error('Auth signup error:', authError);
+        throw new Error(`Failed to create user account: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('Failed to create user account - no user data returned');
+      }
+
+      console.log('Auth user created successfully:', authData.user.id);
+
+      // Then create the user profile in the users table
+      console.log('Step 2: Creating user profile...');
+      const profileInsertData = {
+        id: authData.user.id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role
+      };
+      console.log('Profile insert data:', profileInsertData);
+
+      // Debug: Check current user authentication
+      const { data: currentUser } = await this.supabase.auth.getUser();
+      console.log('Current authenticated user:', currentUser?.user?.id);
+
+      // Debug: Check if current user is admin
+      if (currentUser?.user?.id) {
+        const { data: adminCheck } = await this.supabase
+          .from('users')
+          .select('role')
+          .eq('id', currentUser.user.id)
+          .single();
+        console.log('Current user role check:', adminCheck);
+      }
+
+      const { data: profileData, error: profileError } = await this.supabase
+        .from('users')
+        .insert([profileInsertData])
+        .select()
+        .single();
+
+      console.log('Profile creation result:', { data: profileData, error: profileError });
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        console.error('Full profile error details:', JSON.stringify(profileError, null, 2));
+        throw new Error(`Failed to create user profile: ${profileError.message}`);
+      }
+
+      if (!profileData) {
+        throw new Error('Profile creation succeeded but no data returned');
+      }
+
+      console.log('User created successfully:', profileData);
+      return profileData;
+    } catch (error) {
+      console.error('Error in createUser:', error);
+      console.error('Full error details:', JSON.stringify(error, null, 2));
+      throw error;
     }
-
-    return data;
   }
 
   async updateUser(id: string, updates: Partial<Omit<User, 'id' | 'created_at'>>): Promise<User> {
-    const { data, error } = await this.supabase
-      .from('users')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from('users')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error updating user:', error);
-      throw new Error('Failed to update user');
+      if (error) {
+        console.error('Error updating user:', error);
+        throw new Error(`Failed to update user: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('No data returned from update');
+        throw new Error('No data returned from update');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Exception in updateUser:', error);
+      throw error;
     }
-
-    return data;
   }
 
   // Enrollment operations
@@ -320,6 +416,36 @@ export class DatabaseService {
     }
 
     return data;
+  }
+
+  // Debug method to get current user info
+  async getCurrentUserInfo() {
+    const { data: currentUser } = await this.supabase.auth.getUser();
+    const currentUserId = currentUser?.user?.id;
+
+    if (!currentUserId) {
+      return {
+        currentUserId: null,
+        userData: null,
+        userError: 'No authenticated user',
+        isAdmin: false,
+        authStatus: 'not_authenticated'
+      };
+    }
+
+    const { data: userData, error: userError } = await this.supabase
+      .from('users')
+      .select('id, email, role')
+      .eq('id', currentUserId)
+      .single();
+
+    return {
+      currentUserId,
+      userData,
+      userError,
+      isAdmin: userData?.role === 'admin',
+      authStatus: 'authenticated'
+    };
   }
 }
 

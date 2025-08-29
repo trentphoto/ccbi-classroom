@@ -38,16 +38,13 @@ export default function ClassFormDialog({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    console.log('ClassFormDialog useEffect:', { classData, mode, open });
     if (classData && mode === 'edit') {
-      console.log('Setting form data for edit mode:', classData);
       setFormData({
         name: classData.name,
         description: classData.description,
         is_active: classData.is_active
       });
     } else {
-      console.log('Setting form data for create mode');
       setFormData({
         name: '',
         description: '',
@@ -90,14 +87,9 @@ export default function ClassFormDialog({
 
     if (isSubmitting) return; // Prevent multiple submissions
 
-    console.log('ClassFormDialog handleSubmit:', { formData, mode });
-
     if (validateForm()) {
-      console.log('Form validation passed, submitting data');
       onSubmit(formData);
       // Note: Dialog closing is now handled by the parent component after async operation completes
-    } else {
-      console.log('Form validation failed');
     }
   };
 

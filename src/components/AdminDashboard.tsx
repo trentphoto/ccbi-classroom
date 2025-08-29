@@ -1,39 +1,90 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from './ui/button';
-import { User, UserRole } from '@/types/db';
+import { User, UserRole, Class, Lesson, Submission, ClassEnrollment } from '@/types/db';
 import Image from 'next/image';
-import { 
-  sampleUsers, 
-  sampleClasses, 
-  sampleSubmissions,
-  getStudentsByClass,
-  getLessonsByClass
-} from '@/lib/sample-data';
-import { getTeacherConversations } from '@/lib/messaging';
+import { db } from '@/lib/supabase/database';
+import { useAuth } from '@/lib/auth-context';
+import { useRouter } from 'next/navigation';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { MoreVertical, LogOut, User as UserIcon, Settings } from 'lucide-react';
+import { toast } from 'sonner';
 import ChatInterface from './ChatInterface';
 import UserFormDialog from './UserFormDialog';
-import { addUser, updateUser } from '@/lib/user-management';
-
-// Use sample data
-const mockClasses = sampleClasses;
-// const mockUsers = sampleUsers; // Unused variable
-// const mockEnrollments = sampleEnrollments; // Unused variable
-// const mockLessons = sampleLessons; // Unused variable
-const mockSubmissions = sampleSubmissions;
+import ClassFormDialog from './ClassFormDialog';
 
 type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'messages';
 
 export default function AdminDashboard() {
-  const [selectedClassId, setSelectedClassId] = useState<string>('class1');
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  
+  // State for data
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [enrollments, setEnrollments] = useState<ClassEnrollment[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  
+  // State for UI
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+  const [classDialogOpen, setClassDialogOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState<Class | null>(null);
+  const [classDialogMode, setClassDialogMode] = useState<'create' | 'edit'>('create');
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
+  const [isSubmittingClass, setIsSubmittingClass] = useState(false);
+  const [isSubmittingUser, setIsSubmittingUser] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // State for loading and errors
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load data on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Load all data in parallel
+      const [classesData, usersData, enrollmentsData, lessonsData, submissionsData] = await Promise.all([
+        db.getClasses(),
+        db.getUsers(),
+        db.getEnrollments(),
+        db.getLessons(),
+        db.getSubmissions()
+      ]);
+
+
+
+      setClasses(classesData);
+      setUsers(usersData);
+      setEnrollments(enrollmentsData);
+      setLessons(lessonsData);
+      setSubmissions(submissionsData);
+
+      // Set first class as selected if available
+      if (classesData.length > 0 && !selectedClassId) {
+        setSelectedClassId(classesData[0].id);
+      }
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load dashboard data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -57,39 +108,274 @@ export default function AdminDashboard() {
     };
   }, [isClassDropdownOpen]);
 
-  // Get unread message count for the teacher in the selected class
-  const teacherId = sampleUsers.find(u => u.role === UserRole.ADMIN)?.id || '';
-  const classConversations = getTeacherConversations(teacherId).filter(conv => conv.class_id === selectedClassId);
-  const unreadCount = classConversations.reduce((total, conv) => total + conv.unread_count, 0);
+  // Get current class data
+  const selectedClass = classes.find(cls => cls.id === selectedClassId);
   
-  // Reset selected conversation when class changes
-  React.useEffect(() => {
-    if (classConversations.length > 0) {
-      setSelectedConversation(classConversations[0].id);
-    } else {
-      setSelectedConversation(null);
-    }
-  }, [selectedClassId, classConversations]);
+  // Get students enrolled in the selected class
+  const classStudents = useMemo(() => {
+    const filtered = users.filter(user =>
+      user.role === UserRole.STUDENT &&
+      enrollments.some(enrollment =>
+        enrollment.user_id === user.id && enrollment.class_id === selectedClassId
+      )
+    );
+    
+    return filtered;
+  }, [users, enrollments, selectedClassId]);
   
-  // Get the currently selected conversation
-  const currentConversation = classConversations.find(conv => conv.id === selectedConversation) || 
-    (classConversations.length > 0 ? classConversations[0] : null);
-
-  const selectedClass = mockClasses.find(cls => cls.id === selectedClassId);
-  
-  // Filter data based on selected class using helper functions
-  const classStudents = getStudentsByClass(selectedClassId);
-  const classLessons = getLessonsByClass(selectedClassId);
-  const classSubmissions = mockSubmissions.filter(submission => 
-    classLessons.some(lesson => lesson.id === submission.lesson_id)
+  // Get lessons for the selected class
+  const classLessons = useMemo(() => 
+    lessons.filter(lesson => lesson.class_id === selectedClassId),
+    [lessons, selectedClassId]
   );
+  
+  // Get submissions for the selected class
+  const classSubmissions = useMemo(() => 
+    submissions.filter(submission => 
+      classLessons.some(lesson => lesson.id === submission.lesson_id)
+    ),
+    [submissions, classLessons]
+  );
+
+  // Handle user form submission
+  const handleUserSubmit = async (userData: Omit<User, 'id' | 'created_at'>) => {
+    if (isSubmittingUser) return; // Prevent multiple submissions
+
+    try {
+      setIsSubmittingUser(true);
+
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 8000); // 8 second timeout
+      });
+
+      if (dialogMode === 'create') {
+        const newUser = await Promise.race([
+          db.createUser(userData),
+          timeoutPromise
+        ]) as User;
+        
+        setUsers(prev => [...prev, newUser]);
+
+        // If it's a student, create enrollment
+        if (userData.role === UserRole.STUDENT && selectedClassId) {
+          await Promise.race([
+            db.createEnrollment({
+              user_id: newUser.id,
+              class_id: selectedClassId
+            }),
+            timeoutPromise
+          ]);
+          // Reload enrollments to get the new one
+          const updatedEnrollments = await Promise.race([
+            db.getEnrollments(),
+            timeoutPromise
+          ]) as ClassEnrollment[];
+          setEnrollments(updatedEnrollments);
+        }
+        toast.success(`${userData.role === UserRole.STUDENT ? 'Student' : 'Admin'} "${newUser.name}" created successfully!`);
+      } else if (dialogMode === 'edit' && editingUser) {
+        const updatedUser = await Promise.race([
+          db.updateUser(editingUser.id, userData),
+          timeoutPromise
+        ]) as User;
+        
+        // Force a complete state refresh to ensure UI updates
+        setUsers(prev => {
+          const newUsers = [...prev.map(user => user.id === updatedUser.id ? updatedUser : user)];
+          return newUsers;
+        });
+        
+        // Also update the editingUser state to ensure consistency
+        setEditingUser(updatedUser);
+        
+        toast.success(`${userData.role === UserRole.STUDENT ? 'Student' : 'Admin'} "${updatedUser.name}" updated successfully!`);
+      }
+
+      // Close dialog and reset state
+      setUserDialogOpen(false);
+      setEditingUser(null);
+      setDialogMode('create');
+    } catch (err) {
+      console.error('Error saving user:', err);
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+
+      if (err instanceof Error) {
+        if (err.message.includes('timeout')) {
+          errorMessage = 'Request timed out after 8 seconds. Please check your connection and try again.';
+        } else if (err.message.includes('email address is already in use')) {
+          errorMessage = 'A user with this email already exists. Please use a different email.';
+        } else if (err.message.includes('Invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (err.message.includes('Password should be at least')) {
+          errorMessage = 'Password requirements not met. Please try a different approach.';
+        } else if (err.message.includes('Failed to update user')) {
+          errorMessage = 'Failed to update user. Please try again.';
+        } else if (err.message.includes('Failed to create user')) {
+          errorMessage = 'Failed to create user. Please try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmittingUser(false);
+    }
+  };
+
+  // Handle user edit
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setDialogMode('edit');
+    setUserDialogOpen(true);
+  };
+
+  // Handle user delete
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    
+    try {
+      await db.deleteEnrollment(userId); // Delete enrollment first
+      // Note: We can't delete the user from auth.users via RLS, so we'll just remove from our state
+      setUsers(prev => prev.filter(user => user.id !== userId));
+      setEnrollments(prev => prev.filter(enrollment => enrollment.user_id !== userId));
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError('Failed to delete user. Please try again.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (err) {
+      console.error('Error logging out:', err);
+    }
+  };
+
+
+
+  // Handle class form submission
+  const handleClassSubmit = async (classData: Omit<Class, 'id' | 'created_at' | 'updated_at'>) => {
+    if (isSubmittingClass) return; // Prevent multiple submissions
+
+    try {
+      setIsSubmittingClass(true);
+
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 8000); // 8 second timeout
+      });
+
+      if (classDialogMode === 'create') {
+        const newClass = await Promise.race([
+          db.createClass(classData),
+          timeoutPromise
+        ]) as Class;
+        
+        setClasses(prev => [newClass, ...prev]);
+        setSelectedClassId(newClass.id);
+        toast.success(`Class "${newClass.name}" created successfully!`);
+      } else if (classDialogMode === 'edit' && editingClass) {
+        const updatedClass = await Promise.race([
+          db.updateClass(editingClass.id, classData),
+          timeoutPromise
+        ]) as Class;
+        
+        setClasses(prev => prev.map(cls => cls.id === updatedClass.id ? updatedClass : cls));
+        toast.success(`Class "${updatedClass.name}" updated successfully!`);
+      }
+
+      // Close dialog and reset state
+      setClassDialogOpen(false);
+      setEditingClass(null);
+      setClassDialogMode('create');
+    } catch (err) {
+      console.error('Error saving class:', err);
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('timeout')) {
+          errorMessage = 'Request timed out after 8 seconds. Please check your connection and try again.';
+        } else if (err.message.includes('Failed to create class')) {
+          errorMessage = 'Failed to create class. Please try again.';
+        } else if (err.message.includes('Failed to update class')) {
+          errorMessage = 'Failed to update class. Please try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmittingClass(false);
+    }
+  };
+
+  // Handle class creation
+  const handleCreateClass = () => {
+    setClassDialogMode('create');
+    setEditingClass(null);
+    setClassDialogOpen(true);
+  };
+
+  // Handle class edit
+  const handleEditClass = (classData: Class) => {
+    if (!classData) {
+      return;
+    }
+    setClassDialogMode('edit');
+    setEditingClass(classData);
+    setClassDialogOpen(true);
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={loadData}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no classes
+  if (classes.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-4">No Classes Found</h1>
+          <p className="text-gray-600 mb-4">Create your first class to get started.</p>
+          <Button onClick={handleCreateClass}>Create Class</Button>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'students', label: 'Students', count: classStudents.length },
     { id: 'lessons', label: 'Lessons', count: classLessons.length },
     { id: 'submissions', label: 'Submissions', count: classSubmissions.length },
-    { id: 'messages', label: 'Messages', count: unreadCount },
+    { id: 'messages', label: 'Messages', count: 0 }, // TODO: Implement messaging
   ];
 
   const renderOverview = () => (
@@ -110,8 +396,8 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex flex-col justify-center space-y-2">
-            <Button className="w-full">Edit Class Settings</Button>
-            <Button variant="outline" className="w-full">Manage Enrollments</Button>
+            <Button className="w-full" onClick={() => selectedClass && handleEditClass(selectedClass)}>Edit Class Settings</Button>
+            <Button variant="outline" className="w-full" onClick={() => setActiveTab('students')}>Manage Enrollments</Button>
           </div>
         </div>
       </div>
@@ -120,8 +406,8 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center">
-            <div className="p-2 bg-[#072c68]/20 rounded-lg">
-              <svg className="w-6 h-6 text-[#072c68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
               </svg>
             </div>
@@ -134,9 +420,9 @@ export default function AdminDashboard() {
 
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center">
-            <div className="p-2 bg-[#086623]/20 rounded-lg">
-              <svg className="w-6 h-6 text-[#086623]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <div className="p-2 bg-green-100 rounded-lg">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
             <div className="ml-4">
@@ -148,9 +434,9 @@ export default function AdminDashboard() {
 
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center">
-            <div className="p-2 bg-[#d2ac47]/20 rounded-lg">
-              <svg className="w-6 h-6 text-[#d2ac47]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
             <div className="ml-4">
@@ -162,18 +448,14 @@ export default function AdminDashboard() {
 
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center">
-            <div className="p-2 bg-[#a50417]/20 rounded-lg">
-              <svg className="w-6 h-6 text-[#a50417]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Avg Grade</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {classSubmissions.filter(s => s.grade !== null).length > 0 
-                  ? Math.round(classSubmissions.reduce((sum, s) => sum + (s.grade || 0), 0) / classSubmissions.filter(s => s.grade !== null).length)
-                  : 'N/A'}%
-              </p>
+              <p className="text-sm font-medium text-gray-600">Messages</p>
+              <p className="text-2xl font-semibold text-gray-900">0</p>
             </div>
           </div>
         </div>
@@ -213,24 +495,6 @@ export default function AdminDashboard() {
     setDialogMode('create');
     setEditingUser(null);
     setUserDialogOpen(true);
-  };
-
-  const handleEditUser = (user: User) => {
-    setDialogMode('edit');
-    setEditingUser(user);
-    setUserDialogOpen(true);
-  };
-
-  const handleUserSubmit = (userData: Omit<User, 'id' | 'created_at'>) => {
-    if (dialogMode === 'create') {
-      addUser(userData, selectedClassId);
-    } else if (editingUser) {
-      updateUser(editingUser.id, userData);
-    }
-    
-    // In a real app, you would refresh the data here
-    // For now, we'll just show a success message
-    alert(dialogMode === 'create' ? 'Student added successfully!' : 'Student updated successfully!');
   };
 
   const renderStudents = () => (
@@ -380,97 +644,13 @@ export default function AdminDashboard() {
   );
 
   const renderMessages = () => {
-    if (classConversations.length === 0) {
-      return (
-        <div className="text-center py-8">
-          <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Messages</h3>
-          <p className="text-gray-600">No conversations with students in this class yet.</p>
-        </div>
-      );
-    }
-
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Conversations List */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md border">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Conversations</h3>
-              <p className="text-sm text-gray-500">{classConversations.length} active</p>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {classConversations.map((conversation) => {
-                const lastMessage = conversation.messages[conversation.messages.length - 1];
-                const isSelected = currentConversation?.id === conversation.id;
-                
-                return (
-                  <button
-                    key={conversation.id}
-                    onClick={() => setSelectedConversation(conversation.id)}
-                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                      isSelected ? 'bg-blue-50 border-r-2 border-blue-500' : ''
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-[#072c68] rounded-full flex items-center justify-center">
-                        <span className="text-white font-semibold">
-                          {conversation.student.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className={`text-sm font-medium truncate ${
-                            isSelected ? 'text-blue-900' : 'text-gray-900'
-                          }`}>
-                            {conversation.student.name}
-                          </p>
-                          {conversation.unread_count > 0 && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              {conversation.unread_count}
-                            </span>
-                          )}
-                        </div>
-                        {lastMessage && (
-                          <p className="text-xs text-gray-600 truncate mt-1">
-                            {lastMessage.content}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">
-                          {conversation.last_message_at.toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Chat Interface */}
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-lg shadow-md border h-[600px]">
-            {currentConversation ? (
-              <ChatInterface 
-                conversation={currentConversation} 
-                currentUser={sampleUsers.find(u => u.role === UserRole.ADMIN)!} 
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Conversation</h3>
-                  <p className="text-gray-500">Choose a student from the list to start messaging</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="text-center py-12">
+        <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Messages Coming Soon</h3>
+        <p className="text-gray-600">The messaging feature will be implemented in a future update.</p>
       </div>
     );
   };
@@ -514,10 +694,43 @@ export default function AdminDashboard() {
                 </div>
             </div>
                           <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-white">{sampleUsers.find(u => u.role === UserRole.ADMIN)?.name}</p>
-                  <p className="text-xs text-[#d2ac47]">{sampleUsers.find(u => u.role === UserRole.ADMIN)?.email}</p>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="h-auto p-2 text-white hover:bg-white/10 data-[state=open]:bg-white/10"
+                    >
+                      <Avatar className="h-8 w-8 rounded-lg">
+                        <AvatarImage src="" alt={user?.name || 'Admin'} />
+                        <AvatarFallback className="rounded-lg bg-white/20 text-white">
+                          {user?.name?.charAt(0) || 'A'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="grid flex-1 text-left text-sm leading-tight ml-3">
+                        <span className="truncate font-medium text-white">{user?.name || 'Admin User'}</span>
+                        <span className="text-[#d2ac47] truncate text-xs">
+                          {user?.email || 'admin@ccbinstitute.org'}
+                        </span>
+                      </div>
+                      <MoreVertical className="ml-auto h-4 w-4 text-white" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => {}}>
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {}}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
           </div>
         </div>
@@ -527,21 +740,32 @@ export default function AdminDashboard() {
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Admin Dashboard</h2>
-            <p className="mt-2 text-gray-600">Manage all CCBI classes here.</p>
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Admin Dashboard</h2>
+              <p className="mt-2 text-gray-600">Manage all CCBI classes here.</p>
+            </div>
           </div>
 
           {/* Class Selector */}
           <div className="bg-white rounded-lg shadow-md border mb-6">
             <div className="p-6">
-              <label htmlFor="class-select" className="block text-sm font-medium text-gray-700 mb-3">
-                <div className="flex items-center space-x-2">
-                  <svg className="w-5 h-5 text-[#072c68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <span>Select Your Class</span>
-                </div>
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <label htmlFor="class-select" className="block text-sm font-medium text-gray-700">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-[#072c68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span>Select Your Class</span>
+                  </div>
+                </label>
+                <Button 
+                  size="sm" 
+                  onClick={handleCreateClass}
+                  className="text-xs"
+                >
+                  + New Class
+                </Button>
+              </div>
               
               {/* Custom Dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -560,8 +784,11 @@ export default function AdminDashboard() {
                         {selectedClass?.name || 'Choose a class...'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {selectedClass?.description ? 
-                          selectedClass.description.substring(0, 60) + '...' : 
+                        {selectedClass?.description ?
+                          (selectedClass.description.length > 50 ?
+                            selectedClass.description.substring(0, 50).trim() + '...' :
+                            selectedClass.description
+                          ) :
                           'Select a class to get started'
                         }
                       </div>
@@ -569,12 +796,12 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className={`w-2 h-2 rounded-full ${selectedClass?.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                         <svg 
-                       className={`w-5 h-5 text-gray-400 transition-transform duration-150 ${isClassDropdownOpen ? 'rotate-180' : ''}`} 
-                       fill="none" 
-                       stroke="currentColor" 
-                       viewBox="0 0 24 24"
-                     >
+                    <svg
+                      className={`w-5 h-5 text-gray-400 transition-transform duration-150 ${isClassDropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -583,7 +810,7 @@ export default function AdminDashboard() {
                 {/* Dropdown Menu */}
                 {isClassDropdownOpen && (
                   <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in slide-in-from-top-1 duration-150">
-                    {mockClasses.map((cls) => (
+                    {classes.map((cls) => (
                       <button
                         key={cls.id}
                         onClick={() => {
@@ -605,16 +832,19 @@ export default function AdminDashboard() {
                             <span className="text-lg">📚</span>
                           </div>
                           <div className="text-sm text-gray-500">
-                            {cls.description.substring(0, 80)}...
+                            {cls.description.length > 80 ?
+                              cls.description.substring(0, 80).trim() + '...' :
+                              cls.description
+                            }
                           </div>
                         </div>
-                                                 <div className="flex items-center space-x-2">
-                           <div className={`w-2 h-2 rounded-full ${cls.is_active ? 'bg-green-500' : 'bg-red-500'} transition-all duration-150 hover:scale-110`} title={cls.is_active ? 'Active Class' : 'Inactive Class'}></div>
-                                                     {selectedClassId === cls.id && (
-                             <svg className="w-5 h-5 text-[#072c68] animate-in zoom-in duration-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                             </svg>
-                           )}
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${cls.is_active ? 'bg-green-500' : 'bg-red-500'} transition-all duration-150 hover:scale-110`} title={cls.is_active ? 'Active Class' : 'Inactive Class'}></div>
+                          {selectedClassId === cls.id && (
+                            <svg className="w-5 h-5 text-[#072c68] animate-in zoom-in duration-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
                         </div>
                       </button>
                     ))}
@@ -633,14 +863,14 @@ export default function AdminDashboard() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as TabType)}
-                                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-[#072c68] text-[#072c68]'
-                      : 'border-transparent text-gray-500 hover:text-[#072c68] hover:border-[#072c68]/30'
-                  }`}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'border-[#072c68] text-[#072c68]'
+                        : 'border-transparent text-gray-500 hover:text-[#072c68] hover:border-[#072c68]/30'
+                    }`}
                   >
                     {tab.label}
-                    {tab.count && (
+                    {tab.count !== undefined && tab.count > 0 && (
                       <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
                         {tab.count}
                       </span>
@@ -694,6 +924,17 @@ export default function AdminDashboard() {
         selectedClassId={selectedClassId}
         onSubmit={handleUserSubmit}
         mode={dialogMode}
+        isSubmitting={isSubmittingUser}
+      />
+
+      {/* Class Form Dialog */}
+      <ClassFormDialog
+        open={classDialogOpen}
+        onOpenChange={setClassDialogOpen}
+        classData={editingClass}
+        onSubmit={handleClassSubmit}
+        mode={classDialogMode}
+        isSubmitting={isSubmittingClass}
       />
     </div>
   );
