@@ -347,7 +347,11 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try {
       // Clear localStorage on logout
-      localStorage.removeItem('adminSelectedClassId');
+      try {
+        localStorage.removeItem('adminSelectedClassId');
+      } catch (error) {
+        console.warn('Could not clear localStorage:', error);
+      }
       await logout();
       router.push('/login');
     } catch (err) {
@@ -377,7 +381,11 @@ export default function AdminDashboard() {
         
         setClasses(prev => [newClass, ...prev]);
         setSelectedClassId(newClass.id);
-        localStorage.setItem('adminSelectedClassId', newClass.id);
+        try {
+          localStorage.setItem('adminSelectedClassId', newClass.id);
+        } catch (error) {
+          console.warn('Could not save selected class to localStorage:', error);
+        }
         toast.success(`Class "${newClass.name}" created successfully!`);
       } else if (classDialogMode === 'edit' && editingClass) {
         const updatedClass = await Promise.race([
