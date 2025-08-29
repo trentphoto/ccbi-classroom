@@ -72,6 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const dbUser = await db.getUserById(authUser.id);
 
       if (dbUser) {
+        // Check if user is active (for students)
+        if (dbUser.role === UserRole.STUDENT && !dbUser.is_active) {
+          console.error('Inactive student attempting to login:', dbUser.email);
+          setError('Your account has been deactivated. Please contact your administrator.');
+          
+          // Sign out the user since they can't access the system
+          await supabase.auth.signOut();
+          setUser(null);
+          return;
+        }
+        
         setUser(dbUser);
       } else {
         // User exists in Supabase Auth but not in our users table

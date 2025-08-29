@@ -3,6 +3,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from './ui/button';
 import { User, UserRole, Class, Lesson, Submission, ClassEnrollment } from '@/types/db';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 import Image from 'next/image';
 import { db } from '@/lib/supabase/database';
 import { useAuth } from '@/lib/auth-context';
@@ -41,6 +49,13 @@ export default function AdminDashboard() {
   const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
   const [isSubmittingClass, setIsSubmittingClass] = useState(false);
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [deactivationDialogOpen, setDeactivationDialogOpen] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
+  const [userFormError, setUserFormError] = useState<string | null>(null);
+  const [showActiveStudents, setShowActiveStudents] = useState<boolean>(true);
+  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // State for loading and errors
@@ -122,6 +137,24 @@ export default function AdminDashboard() {
     
     return filtered;
   }, [users, enrollments, selectedClassId]);
+
+  // Filter students based on active status
+  const filteredStudents = useMemo(() => {
+    return classStudents.filter(student => 
+      showActiveStudents ? student.is_active : !student.is_active
+    );
+  }, [classStudents, showActiveStudents]);
+
+  // Get counts for active and deactivated students
+  const activeStudentsCount = useMemo(() => 
+    classStudents.filter(student => student.is_active).length, 
+    [classStudents]
+  );
+  
+  const deactivatedStudentsCount = useMemo(() => 
+    classStudents.filter(student => !student.is_active).length, 
+    [classStudents]
+  );
   
   // Get lessons for the selected class
   const classLessons = useMemo(() => 
@@ -143,6 +176,7 @@ export default function AdminDashboard() {
 
     try {
       setIsSubmittingUser(true);
+      setUserFormError(null); // Clear any previous errors
 
       // Add timeout to prevent infinite loading
       const timeoutPromise = new Promise((_, reject) => {
@@ -174,6 +208,11 @@ export default function AdminDashboard() {
           setEnrollments(updatedEnrollments);
         }
         toast.success(`${userData.role === UserRole.STUDENT ? 'Student' : 'Admin'} "${newUser.name}" created successfully!`);
+        
+        // Close dialog and reset state on success
+        setUserDialogOpen(false);
+        setEditingUser(null);
+        setDialogMode('create');
       } else if (dialogMode === 'edit' && editingUser) {
         const updatedUser = await Promise.race([
           db.updateUser(editingUser.id, userData),
@@ -190,19 +229,19 @@ export default function AdminDashboard() {
         setEditingUser(updatedUser);
         
         toast.success(`${userData.role === UserRole.STUDENT ? 'Student' : 'Admin'} "${updatedUser.name}" updated successfully!`);
+        
+        // Close dialog and reset state on success
+        setUserDialogOpen(false);
+        setEditingUser(null);
+        setDialogMode('create');
       }
-
-      // Close dialog and reset state
-      setUserDialogOpen(false);
-      setEditingUser(null);
-      setDialogMode('create');
     } catch (err) {
       console.error('Error saving user:', err);
       let errorMessage = 'An unexpected error occurred. Please try again.';
 
       if (err instanceof Error) {
         if (err.message.includes('timeout')) {
-          errorMessage = 'Request timed out after 8 seconds. Please check your connection and try again.';
+          errorMessage = 'Request timed out. Please wait at least one minute and try again.';
         } else if (err.message.includes('email address is already in use')) {
           errorMessage = 'A user with this email already exists. Please use a different email.';
         } else if (err.message.includes('Invalid email')) {
@@ -218,8 +257,8 @@ export default function AdminDashboard() {
         }
       }
 
-      setError(errorMessage);
-      toast.error(errorMessage);
+      // Set error in form instead of showing toast and closing dialog
+      setUserFormError(errorMessage);
     } finally {
       setIsSubmittingUser(false);
     }
@@ -229,7 +268,33 @@ export default function AdminDashboard() {
   const handleEditUser = (user: User) => {
     setEditingUser(user);
     setDialogMode('edit');
+    setUserFormError(null); // Clear any previous errors
     setUserDialogOpen(true);
+  };
+
+  // Handle user deactivation
+  const handleDeactivateUser = (user: User) => {
+    setUserToDeactivate(user);
+    setDeactivationDialogOpen(true);
+  };
+
+  // Confirm user deactivation
+  const confirmDeactivation = async () => {
+    if (!userToDeactivate || isDeactivating) return;
+
+    try {
+      setIsDeactivating(true);
+      const updatedUser = await db.deactivateUser(userToDeactivate.id);
+      setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+      toast.success(`Student "${userToDeactivate.name}" has been permanently deactivated.`);
+      setDeactivationDialogOpen(false);
+      setUserToDeactivate(null);
+    } catch (err) {
+      console.error('Error deactivating user:', err);
+      toast.error('Failed to deactivate user. Please try again.');
+    } finally {
+      setIsDeactivating(false);
+    }
   };
 
   // Handle user delete
@@ -414,6 +479,9 @@ export default function AdminDashboard() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Students</p>
               <p className="text-2xl font-semibold text-gray-900">{classStudents.length}</p>
+              <p className="text-xs text-gray-500">
+                {activeStudentsCount} active, {deactivatedStudentsCount} deactivated
+              </p>
             </div>
           </div>
         </div>
@@ -494,6 +562,7 @@ export default function AdminDashboard() {
   const handleAddUser = () => {
     setDialogMode('create');
     setEditingUser(null);
+    setUserFormError(null); // Clear any previous errors
     setUserDialogOpen(true);
   };
 
@@ -503,7 +572,33 @@ export default function AdminDashboard() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Enrolled Students</h3>
           <p className="text-sm text-gray-500">Students enrolled in {selectedClass?.name}</p>
-          <p className="text-sm text-gray-500">Total: {classStudents.length}</p>
+          <div className="flex items-center space-x-4 mt-2">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowActiveStudents(true)}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  showActiveStudents
+                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                }`}
+              >
+                Active ({activeStudentsCount})
+              </button>
+              <button
+                onClick={() => setShowActiveStudents(false)}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  !showActiveStudents
+                    ? 'bg-red-100 text-red-700 border border-red-300'
+                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                }`}
+              >
+                Deactivated ({deactivatedStudentsCount})
+              </button>
+            </div>
+            <p className="text-sm text-gray-500">
+              Showing: {filteredStudents.length} of {classStudents.length} students
+            </p>
+          </div>
         </div>
         <div>
           <Button onClick={handleAddUser}>Add Student</Button>
@@ -516,13 +611,14 @@ export default function AdminDashboard() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submissions</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Grade</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {classStudents.map((student) => {
+            {filteredStudents.map((student) => {
               const studentSubmissions = classSubmissions.filter(s => s.student_id === student.id);
               const avgGrade = studentSubmissions.filter(s => s.grade !== null).length > 0 
                 ? Math.round(studentSubmissions.reduce((sum, s) => sum + (s.grade || 0), 0) / studentSubmissions.filter(s => s.grade !== null).length)
@@ -532,6 +628,31 @@ export default function AdminDashboard() {
                 <tr key={student.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        student.is_active 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {student.is_active ? 'Active' : 'Deactivated'}
+                      </span>
+                      {student.is_active && (
+                        <button 
+                          type="button"
+                          onClick={() => handleDeactivateUser(student)}
+                          className="px-3 py-1 text-xs bg-red-50 text-red-600 border border-red-300 rounded hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                          Deactivate
+                        </button>
+                      )}
+                      {!student.is_active && student.deactivated_at && (
+                        <span className="text-xs text-gray-500">
+                          {new Date(student.deactivated_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{studentSubmissions.length}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {avgGrade ? `${avgGrade}%` : 'N/A'}
@@ -572,7 +693,7 @@ export default function AdminDashboard() {
               <p className="text-gray-600 mb-3">{lesson.description}</p>
               <div className="space-y-2 mb-4">
                 <p className="text-sm text-gray-500">Due: {lesson.due_date?.toLocaleDateString()}</p>
-                <p className="text-sm text-gray-500">Submissions: {submittedCount}/{classStudents.length}</p>
+                <p className="text-sm text-gray-500">Submissions: {submittedCount}/{activeStudentsCount}</p>
                 <p className="text-sm text-gray-500">Graded: {gradedCount}/{submittedCount}</p>
               </div>
               
@@ -925,6 +1046,7 @@ export default function AdminDashboard() {
         onSubmit={handleUserSubmit}
         mode={dialogMode}
         isSubmitting={isSubmittingUser}
+        error={userFormError}
       />
 
       {/* Class Form Dialog */}
@@ -936,6 +1058,70 @@ export default function AdminDashboard() {
         mode={classDialogMode}
         isSubmitting={isSubmittingClass}
       />
+
+      {/* Deactivation Warning Dialog */}
+      <Dialog open={deactivationDialogOpen} onOpenChange={setDeactivationDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Permanently Deactivate Student</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently deactivate {userToDeactivate?.name}?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Warning</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>This action cannot be undone</li>
+                      <li>The student will no longer be able to log in</li>
+                      <li>All existing data will be preserved</li>
+                      <li>Deactivation time will be recorded</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeactivationDialogOpen(false)}
+              disabled={isDeactivating}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive"
+              onClick={confirmDeactivation}
+              disabled={isDeactivating}
+            >
+              {isDeactivating ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Deactivating...
+                </>
+              ) : (
+                'Permanently Deactivate'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

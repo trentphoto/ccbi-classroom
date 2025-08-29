@@ -113,6 +113,36 @@ export class DatabaseService {
     return data || [];
   }
 
+  async getActiveUsers(): Promise<User[]> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching active users:', error);
+      throw new Error('Failed to fetch active users');
+    }
+
+    return data || [];
+  }
+
+  async getInactiveUsers(): Promise<User[]> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('is_active', false)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching inactive users:', error);
+      throw new Error('Failed to fetch inactive users');
+    }
+
+    return data || [];
+  }
+
   async getUserById(id: string): Promise<User | null> {
     const { data, error } = await this.supabase
       .from('users')
@@ -164,7 +194,9 @@ export class DatabaseService {
         id: authData.user.id,
         email: userData.email,
         name: userData.name,
-        role: userData.role
+        role: userData.role,
+        is_active: userData.is_active ?? true, // Default to true if not provided
+        deactivated_at: null // New users are never deactivated
       };
       console.log('Profile insert data:', profileInsertData);
 
@@ -231,6 +263,36 @@ export class DatabaseService {
       return data;
     } catch (error) {
       console.error('Exception in updateUser:', error);
+      throw error;
+    }
+  }
+
+  async deactivateUser(id: string): Promise<User> {
+    try {
+      const deactivationTime = new Date().toISOString();
+      const { data, error } = await this.supabase
+        .from('users')
+        .update({ 
+          is_active: false, 
+          deactivated_at: deactivationTime 
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error deactivating user:', error);
+        throw new Error(`Failed to deactivate user: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('No data returned from deactivation');
+        throw new Error('No data returned from deactivation');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Exception in deactivateUser:', error);
       throw error;
     }
   }

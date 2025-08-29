@@ -8,6 +8,8 @@ export const sampleUsers: User[] = [
     email: 'admin@ccbinstitute.org',
     role: UserRole.ADMIN,
     name: 'Admin User',
+    is_active: true,
+    deactivated_at: null,
     created_at: new Date('2024-01-15')
   },
   
@@ -17,6 +19,8 @@ export const sampleUsers: User[] = [
     email: 'michael.chen@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Michael Chen',
+    is_active: true,
+    deactivated_at: null,
     created_at: new Date('2024-01-20')
   },
   {
@@ -24,6 +28,8 @@ export const sampleUsers: User[] = [
     email: 'emily.rodriguez@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Emily Rodriguez',
+    is_active: true,
+    deactivated_at: null,
     created_at: new Date('2024-01-20')
   },
   {
@@ -31,6 +37,8 @@ export const sampleUsers: User[] = [
     email: 'david.thompson@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'David Thompson',
+    is_active: false, // Example of an inactive student
+    deactivated_at: new Date('2024-02-15'), // Example deactivation date
     created_at: new Date('2024-01-20')
   },
   
@@ -40,6 +48,8 @@ export const sampleUsers: User[] = [
     email: 'jessica.williams@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Jessica Williams',
+    is_active: true,
+    deactivated_at: null,
     created_at: new Date('2024-01-20')
   },
   {
@@ -47,6 +57,8 @@ export const sampleUsers: User[] = [
     email: 'robert.davis@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Robert Davis',
+    is_active: true,
+    deactivated_at: null,
     created_at: new Date('2024-01-20')
   },
   {
@@ -54,6 +66,8 @@ export const sampleUsers: User[] = [
     email: 'amanda.martinez@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Amanda Martinez',
+    is_active: true,
+    deactivated_at: null,
     created_at: new Date('2024-01-20')
   }
 ];

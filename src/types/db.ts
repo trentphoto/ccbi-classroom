@@ -10,6 +10,8 @@ export enum UserRole {
     email: string;
     role: UserRole;
     name: string;
+    is_active: boolean; // Whether the user is active or inactive
+    deactivated_at: Date | null; // Timestamp when user was permanently deactivated
     created_at: Date; // Required timestamp
   }
   
@@ -113,8 +115,8 @@ export interface AdminDashboard {
   // You can use this to mock the data in your React components
   
   export const mockUsers: User[] = [
-    { id: 'user1', email: 'admin@example.com', role: UserRole.ADMIN, name: 'Admin Teacher', created_at: new Date() },
-    { id: 'user2', email: 'student1@example.com', role: UserRole.STUDENT, name: 'Student One', created_at: new Date() },
+    { id: 'user1', email: 'admin@example.com', role: UserRole.ADMIN, name: 'Admin Teacher', is_active: true, deactivated_at: null, created_at: new Date() },
+    { id: 'user2', email: 'student1@example.com', role: UserRole.STUDENT, name: 'Student One', is_active: true, deactivated_at: null, created_at: new Date() },
     // Add more as needed
   ];
   

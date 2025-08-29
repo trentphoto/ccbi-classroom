@@ -14,6 +14,8 @@ export const addUser = (userData: Omit<User, 'id' | 'created_at'>, classId: stri
   const newUser: User = {
     id: generateUserId(),
     ...userData,
+    is_active: userData.is_active ?? true, // Default to true if not provided
+    deactivated_at: null, // New users are never deactivated
     created_at: new Date()
   };
 
@@ -47,7 +49,9 @@ export const updateUser = (userId: string, userData: Partial<Omit<User, 'id' | '
 
   const updatedUser: User = {
     ...existingUser,
-    ...userData
+    ...userData,
+    is_active: userData.is_active ?? existingUser.is_active,
+    deactivated_at: userData.deactivated_at ?? existingUser.deactivated_at
   };
 
   // In a real app, this would be an API call
