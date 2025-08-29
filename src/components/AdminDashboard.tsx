@@ -67,6 +67,29 @@ export default function AdminDashboard() {
     loadData();
   }, []);
 
+  // Load selected class from localStorage on component mount
+  useEffect(() => {
+    try {
+      const savedClassId = localStorage.getItem('adminSelectedClassId');
+      if (savedClassId) {
+        setSelectedClassId(savedClassId);
+      }
+    } catch (error) {
+      console.warn('Could not load selected class from localStorage:', error);
+    }
+  }, []);
+
+  // Save selected class to localStorage when it changes
+  useEffect(() => {
+    if (selectedClassId) {
+      try {
+        localStorage.setItem('adminSelectedClassId', selectedClassId);
+      } catch (error) {
+        console.warn('Could not save selected class to localStorage:', error);
+      }
+    }
+  }, [selectedClassId]);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -81,17 +104,26 @@ export default function AdminDashboard() {
         db.getSubmissions()
       ]);
 
-
-
       setClasses(classesData);
       setUsers(usersData);
       setEnrollments(enrollmentsData);
       setLessons(lessonsData);
       setSubmissions(submissionsData);
 
-      // Set first class as selected if available
-      if (classesData.length > 0 && !selectedClassId) {
-        setSelectedClassId(classesData[0].id);
+      // Set selected class from localStorage or first available class
+      try {
+        const savedClassId = localStorage.getItem('adminSelectedClassId');
+        if (savedClassId && classesData.some(cls => cls.id === savedClassId)) {
+          setSelectedClassId(savedClassId);
+        } else if (classesData.length > 0) {
+          setSelectedClassId(classesData[0].id);
+          localStorage.setItem('adminSelectedClassId', classesData[0].id);
+        }
+      } catch (error) {
+        console.warn('Could not access localStorage:', error);
+        if (classesData.length > 0) {
+          setSelectedClassId(classesData[0].id);
+        }
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -314,6 +346,8 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     try {
+      // Clear localStorage on logout
+      localStorage.removeItem('adminSelectedClassId');
       await logout();
       router.push('/login');
     } catch (err) {
@@ -343,6 +377,7 @@ export default function AdminDashboard() {
         
         setClasses(prev => [newClass, ...prev]);
         setSelectedClassId(newClass.id);
+        localStorage.setItem('adminSelectedClassId', newClass.id);
         toast.success(`Class "${newClass.name}" created successfully!`);
       } else if (classDialogMode === 'edit' && editingClass) {
         const updatedClass = await Promise.race([
@@ -936,6 +971,11 @@ export default function AdminDashboard() {
                         key={cls.id}
                         onClick={() => {
                           setSelectedClassId(cls.id);
+                          try {
+                            localStorage.setItem('adminSelectedClassId', cls.id);
+                          } catch (error) {
+                            console.warn('Could not save selected class to localStorage:', error);
+                          }
                           setIsClassDropdownOpen(false);
                         }}
                                                  className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gradient-to-r hover:from-[#072c68]/5 hover:to-[#086623]/5 hover:scale-[1.007] transition-all duration-100 transform ${
