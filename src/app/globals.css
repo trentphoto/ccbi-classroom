@@ -28,6 +28,7 @@ a {
 
 @layer base {
   :root {
+    /* Default theme colors */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -53,6 +54,13 @@ a {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    
+    /* Brand-specific colors (set at build time) */
+    --brand-primary: 217 91% 20%; /* Default CCBI blue */
+    --brand-secondary: 142 76% 20%; /* Default CCBI green */
+    --brand-accent: 45 93% 47%; /* Default CCBI gold */
+    --brand-name: "CCBI Classroom";
+    --brand-description: "Equipping Believers for Every Good Work";
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -90,5 +98,62 @@ a {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Brand-specific utility classes */
+  .bg-brand-primary {
+    background-color: hsl(var(--brand-primary));
+  }
+  
+  .bg-brand-secondary {
+    background-color: hsl(var(--brand-secondary));
+  }
+  
+  .bg-brand-accent {
+    background-color: hsl(var(--brand-accent));
+  }
+  
+  .text-brand-primary {
+    color: hsl(var(--brand-primary));
+  }
+  
+  .text-brand-secondary {
+    color: hsl(var(--brand-secondary));
+  }
+  
+  .text-brand-accent {
+    color: hsl(var(--brand-accent));
+  }
+  
+  .border-brand-primary {
+    border-color: hsl(var(--brand-primary));
+  }
+  
+  .border-brand-secondary {
+    border-color: hsl(var(--brand-secondary));
+  }
+  
+  .border-brand-accent {
+    border-color: hsl(var(--brand-accent));
+  }
+  
+  /* Brand gradient backgrounds */
+  .bg-brand-gradient {
+    background: linear-gradient(to right, hsl(var(--brand-primary)), hsl(var(--brand-secondary)));
+  }
+  
+  .bg-brand-gradient-reverse {
+    background: linear-gradient(to left, hsl(var(--brand-primary)), hsl(var(--brand-secondary)));
+  }
+  
+  /* Brand hover effects */
+  .hover\:bg-brand-primary:hover {
+    background-color: hsl(var(--brand-primary));
+  }
+  
+  .hover\:text-brand-primary:hover {
+    color: hsl(var(--brand-primary));
   }
 }

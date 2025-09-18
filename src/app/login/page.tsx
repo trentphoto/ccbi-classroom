@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth-context';
+import { CURRENT_BRAND } from '@/lib/brand';
 import Image from 'next/image';
 
 export default function LoginPage() {
@@ -35,18 +36,18 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="bg-white rounded-full aspect-square w-24 h-24 flex items-center justify-center">
+          <div className="bg-white rounded-full aspect-square w-24 h-24 flex items-center justify-center p-2">
             <Image
-              src="/logo.svg"
-              alt="CCBI Classroom Logo"
-              width={128}
-              height={128}
-              className="h-32 w-auto"
+              src={CURRENT_BRAND.logoUrl}
+              alt={`${CURRENT_BRAND.name} Logo`}
+              width={80}
+              height={80}
+              className="max-w-full max-h-full object-contain"
             />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to CCBI Classroom
+          Sign in to {CURRENT_BRAND.name}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Access your classroom dashboard

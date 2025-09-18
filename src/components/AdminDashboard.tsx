@@ -11,15 +11,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
-import Image from 'next/image';
 import { db } from '@/lib/supabase/database';
+import SimpleHeader from './SimpleHeader';
+import SimpleFooter from './SimpleFooter';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { MoreVertical, LogOut, User as UserIcon, Settings } from 'lucide-react';
 import { toast } from 'sonner';
-import ChatInterface from './ChatInterface';
 import UserFormDialog from './UserFormDialog';
 import ClassFormDialog from './ClassFormDialog';
 
@@ -468,13 +468,25 @@ export default function AdminDashboard() {
   // Show empty state if no classes
   if (classes.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-4">No Classes Found</h1>
-          <p className="text-gray-600 mb-4">Create your first class to get started.</p>
-          <Button onClick={handleCreateClass}>Create Class</Button>
+      <>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold text-gray-900 mb-4">No Classes Found</h1>
+            <p className="text-gray-600 mb-4">Create your first class to get started.</p>
+            <Button onClick={handleCreateClass}>Create Class</Button>
+          </div>
         </div>
-      </div>
+
+        {/* Class Form Dialog - needed even in empty state */}
+        <ClassFormDialog
+          open={classDialogOpen}
+          onOpenChange={setClassDialogOpen}
+          classData={editingClass}
+          onSubmit={handleClassSubmit}
+          mode={classDialogMode}
+          isSubmitting={isSubmittingClass}
+        />
+      </>
     );
   }
 
@@ -574,7 +586,16 @@ export default function AdminDashboard() {
 
       {/* Recent Activity */}
       <div className="bg-white p-6 rounded-lg shadow-md border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Submissions</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Submissions</h3>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => router.push('/submissions')}
+          >
+            View All
+          </Button>
+        </div>
         <div className="space-y-4">
           {classSubmissions.slice(0, 5).map((submission) => {
             const lesson = classLessons.find(l => l.id === submission.lesson_id);
@@ -584,7 +605,7 @@ export default function AdminDashboard() {
               <div key={submission.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
                   <p className="font-medium text-gray-900">{student?.name} - {lesson?.title}</p>
-                  <p className="text-sm text-gray-600">Submitted on {submission.submitted_at.toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-600">Submitted on {new Date(submission.submitted_at).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   {submission.grade && (
@@ -592,7 +613,13 @@ export default function AdminDashboard() {
                       Grade: {submission.grade}%
                     </span>
                   )}
-                  <Button size="sm" variant="outline">Review</Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => router.push(`/submissions/${submission.id}`)}
+                  >
+                    Review
+                  </Button>
                 </div>
               </div>
             );
@@ -735,7 +762,7 @@ export default function AdminDashboard() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{lesson.title}</h3>
               <p className="text-gray-600 mb-3">{lesson.description}</p>
               <div className="space-y-2 mb-4">
-                <p className="text-sm text-gray-500">Due: {lesson.due_date?.toLocaleDateString()}</p>
+                <p className="text-sm text-gray-500">Due: {lesson.due_date ? new Date(lesson.due_date).toLocaleDateString() : 'No due date'}</p>
                 <p className="text-sm text-gray-500">Submissions: {submittedCount}/{activeStudentsCount}</p>
                 <p className="text-sm text-gray-500">Graded: {gradedCount}/{submittedCount}</p>
               </div>
@@ -783,7 +810,7 @@ export default function AdminDashboard() {
                 <tr key={submission.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student?.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lesson?.title}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{submission.submitted_at.toLocaleDateString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(submission.submitted_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {submission.grade ? (
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -796,7 +823,13 @@ export default function AdminDashboard() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <Button size="sm" variant="outline">Review</Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => router.push(`/submissions/${submission.id}`)}
+                    >
+                      Review
+                    </Button>
                   </td>
                 </tr>
               );
@@ -839,24 +872,10 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-gradient-to-r from-[#072c68] to-[#086623] shadow-lg">
+      <header className="bg-brand-gradient shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-white rounded-full aspect-square w-24 h-24 flex items-center justify-center">
-                <Image
-                  src="/logo.svg"
-                  alt="CCBI Classroom Logo"
-                  width={128}
-                  height={128}
-                  className="h-32 w-auto"
-                />
-              </div>
-                              <div>
-                  <h1 className="text-2xl font-bold text-white">CCBI Classroom</h1>
-                  <p className="text-sm text-[#d2ac47]">Admin Dashboard</p>
-                </div>
-            </div>
+            <SimpleHeader subtitle="Admin Dashboard" />
                           <div className="flex items-center space-x-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1058,32 +1077,7 @@ export default function AdminDashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-[#072c68] to-[#086623] border-t mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-3">
-              <div className="bg-white rounded-full aspect-square w-24 h-24 flex items-center justify-center">
-                <Image
-                  src="/logo.svg"
-                  alt="CCBI Classroom Logo"
-                  width={112}
-                  height={112}
-                  className="h-32 w-auto"
-                />
-              </div>
-              <span className="text-lg font-semibold text-white">CCBI Classroom</span>
-            </div>
-            <div className="text-center md:text-right">
-              <p className="text-sm text-[#d2ac47]">
-                © {new Date().getFullYear()} CCBI Classroom. All rights reserved.
-              </p>
-              <p className="text-xs text-white/80 mt-1 italic">
-                Equipping Believers for Every Good Work
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SimpleFooter />
 
       {/* User Form Dialog */}
       <UserFormDialog

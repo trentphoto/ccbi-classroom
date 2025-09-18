@@ -3,6 +3,12 @@ export enum UserRole {
     ADMIN = 'admin',
     STUDENT = 'student',
   }
+
+// Define enum for brand types
+export enum BrandType {
+    CCBI = 'ccbi',
+    ZTS = 'zts',
+  }
   
   // Type for User entity - matches Supabase users table
   export interface User {
@@ -10,6 +16,7 @@ export enum UserRole {
     email: string;
     role: UserRole;
     name: string;
+    brand_id: string; // Brand identifier ('ccbi' or 'zts')
     is_active: boolean; // Whether the user is active or inactive
     deactivated_at: Date | null; // Timestamp when user was permanently deactivated
     created_at: Date; // Required timestamp
@@ -20,6 +27,7 @@ export enum UserRole {
     id: string; // UUID
     name: string;
     description: string;
+    brand_id: string; // Brand identifier ('ccbi' or 'zts')
     is_active: boolean;
     created_at: Date; // Required timestamp
     updated_at: Date; // Required timestamp
@@ -115,13 +123,13 @@ export interface AdminDashboard {
   // You can use this to mock the data in your React components
   
   export const mockUsers: User[] = [
-    { id: 'user1', email: 'admin@example.com', role: UserRole.ADMIN, name: 'Admin Teacher', is_active: true, deactivated_at: null, created_at: new Date() },
-    { id: 'user2', email: 'student1@example.com', role: UserRole.STUDENT, name: 'Student One', is_active: true, deactivated_at: null, created_at: new Date() },
+    { id: 'user1', email: 'admin@example.com', role: UserRole.ADMIN, name: 'Admin Teacher', is_active: true, deactivated_at: null, created_at: new Date(), brand_id: 'ccbi' },
+    { id: 'user2', email: 'student1@example.com', role: UserRole.STUDENT, name: 'Student One', is_active: true, deactivated_at: null, created_at: new Date(), brand_id: 'ccbi' },
     // Add more as needed
   ];
   
   export const mockClasses: Class[] = [
-    { id: 'class1', name: 'Math 101', description: 'Basic Mathematics', is_active: true, created_at: new Date(), updated_at: new Date() },
+    { id: 'class1', name: 'Math 101', description: 'Basic Mathematics', is_active: true, created_at: new Date(), updated_at: new Date(), brand_id: 'ccbi' },
     // Add more
   ];
   

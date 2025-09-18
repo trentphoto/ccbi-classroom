@@ -1,15 +1,18 @@
 import { createClient } from './client';
 import { Class, User, Lesson, Submission, ClassEnrollment, UserRole } from '@/types/db';
+import { CURRENT_BRAND_ID } from '@/lib/brand';
 
 // Database service class for all Supabase operations
 export class DatabaseService {
   private supabase = createClient();
+  private brandId = CURRENT_BRAND_ID;
 
   // Class operations
   async getClasses(): Promise<Class[]> {
     const { data, error } = await this.supabase
       .from('classes')
       .select('*')
+      .eq('brand_id', this.brandId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -25,6 +28,7 @@ export class DatabaseService {
       .from('classes')
       .select('*')
       .eq('id', id)
+      .eq('brand_id', this.brandId)
       .single();
 
     if (error) {
@@ -37,9 +41,14 @@ export class DatabaseService {
 
   async createClass(classData: Omit<Class, 'id' | 'created_at' | 'updated_at'>): Promise<Class> {
     try {
+      const classDataWithBrand = {
+        ...classData,
+        brand_id: this.brandId
+      };
+      
       const { data, error } = await this.supabase
         .from('classes')
-        .insert([classData])
+        .insert([classDataWithBrand])
         .select()
         .single();
 
@@ -103,6 +112,7 @@ export class DatabaseService {
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
+      .eq('brand_id', this.brandId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -117,6 +127,7 @@ export class DatabaseService {
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
+      .eq('brand_id', this.brandId)
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
@@ -132,6 +143,7 @@ export class DatabaseService {
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
+      .eq('brand_id', this.brandId)
       .eq('is_active', false)
       .order('created_at', { ascending: false });
 
@@ -148,6 +160,7 @@ export class DatabaseService {
       .from('users')
       .select('*')
       .eq('id', id)
+      .eq('brand_id', this.brandId)
       .single();
 
     if (error) {
@@ -195,6 +208,7 @@ export class DatabaseService {
         email: userData.email,
         name: userData.name,
         role: userData.role,
+        brand_id: this.brandId, // Add brand_id to user profile
         is_active: userData.is_active ?? true, // Default to true if not provided
         deactivated_at: null // New users are never deactivated
       };

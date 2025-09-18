@@ -1,22 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Classroom Management System
 
-## Getting Started
+A multi-brand classroom management system built with Next.js, supporting CCBI and ZTS brands with complete data isolation.
 
-First, run the development server:
+## 🚀 Quick Start
 
+### Development
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev:ccbi  # CCBI version
+npm run dev:zts   # ZTS version
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Production Builds
+```bash
+npm run build:ccbi  # CCBI build
+npm run build:zts   # ZTS build
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📖 Documentation
+
+See [MULTI-BRAND-SUMMARY.md](./MULTI-BRAND-SUMMARY.md) for complete setup and deployment instructions.
+
+## 🔧 Setup
+
+1. Copy `.env.example` to `.env.local`
+2. Set your Supabase credentials
+3. Set `NEXT_PUBLIC_BRAND_ID` to `ccbi` or `zts`
+4. Run the appropriate dev command
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

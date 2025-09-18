@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Class } from '@/types/db';
+import { CURRENT_BRAND_ID } from '@/lib/brand';
 
 interface ClassFormDialogProps {
   open: boolean;
@@ -82,13 +83,17 @@ export default function ClassFormDialog({
     return Object.keys(newErrors).length === 0;
   };
 
-    const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isSubmitting) return; // Prevent multiple submissions
 
     if (validateForm()) {
-      onSubmit(formData);
+      const formDataWithBrand = {
+        ...formData,
+        brand_id: CURRENT_BRAND_ID
+      };
+      onSubmit(formDataWithBrand);
       // Note: Dialog closing is now handled by the parent component after async operation completes
     }
   };

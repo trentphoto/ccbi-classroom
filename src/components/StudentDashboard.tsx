@@ -7,6 +7,8 @@ import Image from 'next/image';
 import { db } from '@/lib/supabase/database';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import SimpleHeader from './SimpleHeader';
+import SimpleFooter from './SimpleFooter';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { MoreVertical, LogOut, User as UserIcon, Settings } from 'lucide-react';
@@ -172,24 +174,10 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-gradient-to-r from-[#072c68] to-[#086623] shadow-lg">
+      <header className="bg-brand-gradient shadow-lg">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-white rounded-full aspect-square w-24 h-24 flex items-center justify-center">
-                <Image
-                  src="/logo.svg"
-                  alt="CCBI Classroom Logo"
-                  width={128}
-                  height={128}
-                  className="h-32 w-auto"
-                />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">CCBI Classroom</h1>
-                <p className="text-sm text-[#d2ac47]">Welcome back, {currentUser.name}</p>
-              </div>
-            </div>
+            <SimpleHeader subtitle={`Welcome back, ${currentUser?.name || 'Student'}`} />
             <div className="flex items-center space-x-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -393,32 +381,7 @@ export default function StudentDashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-[#072c68] to-[#086623] border-t mt-auto">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-3">
-              <div className="bg-white rounded-full aspect-square w-24 h-24 flex items-center justify-center">
-                <Image
-                  src="/logo.svg"
-                  alt="CCBI Classroom Logo"
-                  width={112}
-                  height={112}
-                  className="h-32 w-auto"
-                />
-              </div>
-              <span className="text-lg font-semibold text-white">CCBI Classroom</span>
-            </div>
-            <div className="text-center md:text-right">
-              <p className="text-sm text-[#d2ac47]">
-                © {new Date().getFullYear()} CCBI Classroom. All rights reserved.
-              </p>
-              <p className="text-xs text-white/80 mt-1 italic">
-                Equipping Believers for Every Good Work
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SimpleFooter />
     </div>
   );
 }

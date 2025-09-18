@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { CURRENT_BRAND } from "@/lib/brand";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -14,9 +15,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Dynamic metadata will be set in each deployment's environment
 export const metadata: Metadata = {
-  title: "CCBI Classroom",
-  description: "CCBI Classroom",
+  title: CURRENT_BRAND.name,
+  description: CURRENT_BRAND.description,
 };
 
 export default function RootLayout({
