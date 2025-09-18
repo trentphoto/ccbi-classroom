@@ -22,6 +22,7 @@ import { MoreVertical, LogOut, User as UserIcon, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import UserFormDialog from './UserFormDialog';
 import ClassFormDialog from './ClassFormDialog';
+import LessonFormDialog from './LessonFormDialog';
 
 type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'messages';
 
@@ -54,6 +55,12 @@ export default function AdminDashboard() {
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
   const [userFormError, setUserFormError] = useState<string | null>(null);
   const [showActiveStudents, setShowActiveStudents] = useState<boolean>(true);
+  
+  // Lesson dialog state
+  const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [lessonDialogMode, setLessonDialogMode] = useState<'create' | 'edit'>('create');
+  const [isSubmittingLesson, setIsSubmittingLesson] = useState(false);
   
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -441,6 +448,80 @@ export default function AdminDashboard() {
     setClassDialogOpen(true);
   };
 
+  // Handle lesson form submission
+  const handleLessonSubmit = async (lessonData: Omit<Lesson, 'id' | 'created_at'>) => {
+    if (isSubmittingLesson) return; // Prevent multiple submissions
+
+    try {
+      setIsSubmittingLesson(true);
+
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 8000); // 8 second timeout
+      });
+
+      if (lessonDialogMode === 'create') {
+        const newLesson = await Promise.race([
+          db.createLesson(lessonData),
+          timeoutPromise
+        ]) as Lesson;
+        
+        setLessons(prev => [newLesson, ...prev]);
+        toast.success(`Lesson "${newLesson.title}" created successfully!`);
+      } else if (lessonDialogMode === 'edit' && editingLesson) {
+        const updatedLesson = await Promise.race([
+          db.updateLesson(editingLesson.id, lessonData),
+          timeoutPromise
+        ]) as Lesson;
+        
+        setLessons(prev => prev.map(lesson => lesson.id === updatedLesson.id ? updatedLesson : lesson));
+        toast.success(`Lesson "${updatedLesson.title}" updated successfully!`);
+      }
+
+      // Close dialog and reset state
+      setLessonDialogOpen(false);
+      setEditingLesson(null);
+      setLessonDialogMode('create');
+    } catch (err) {
+      console.error('Error saving lesson:', err);
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('timeout')) {
+          errorMessage = 'Request timed out after 8 seconds. Please check your connection and try again.';
+        } else if (err.message.includes('Failed to create lesson')) {
+          errorMessage = 'Failed to create lesson. Please try again.';
+        } else if (err.message.includes('Failed to update lesson')) {
+          errorMessage = 'Failed to update lesson. Please try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmittingLesson(false);
+    }
+  };
+
+  // Handle lesson creation
+  const handleCreateLesson = () => {
+    setLessonDialogMode('create');
+    setEditingLesson(null);
+    setLessonDialogOpen(true);
+  };
+
+  // Handle lesson edit
+  const handleEditLesson = (lesson: Lesson) => {
+    if (!lesson) {
+      return;
+    }
+    setLessonDialogMode('edit');
+    setEditingLesson(lesson);
+    setLessonDialogOpen(true);
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -748,7 +829,7 @@ export default function AdminDashboard() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900">Class Lessons</h3>
-        <Button>Create Lesson</Button>
+        <Button onClick={handleCreateLesson}>Create Lesson</Button>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -773,7 +854,7 @@ export default function AdminDashboard() {
                     View Video
                   </Button>
                 )}
-                <Button size="sm" variant="outline">Edit</Button>
+                <Button size="sm" variant="outline" onClick={() => handleEditLesson(lesson)}>Edit</Button>
                 <Button size="sm">View Submissions</Button>
               </div>
             </div>
@@ -1099,6 +1180,17 @@ export default function AdminDashboard() {
         onSubmit={handleClassSubmit}
         mode={classDialogMode}
         isSubmitting={isSubmittingClass}
+      />
+
+      {/* Lesson Form Dialog */}
+      <LessonFormDialog
+        open={lessonDialogOpen}
+        onOpenChange={setLessonDialogOpen}
+        lessonData={editingLesson}
+        classId={selectedClassId}
+        onSubmit={handleLessonSubmit}
+        mode={lessonDialogMode}
+        isSubmitting={isSubmittingLesson}
       />
 
       {/* Deactivation Warning Dialog */}

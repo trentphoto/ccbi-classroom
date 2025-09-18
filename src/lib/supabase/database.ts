@@ -429,6 +429,32 @@ export class DatabaseService {
     return data;
   }
 
+  async updateLesson(id: string, updates: Partial<Omit<Lesson, 'id' | 'created_at'>>): Promise<Lesson> {
+    try {
+      const { data, error } = await this.supabase
+        .from('lessons')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating lesson:', error);
+        throw new Error(`Failed to update lesson: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('No data returned from lesson update');
+        throw new Error('No data returned from lesson update');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Exception in updateLesson:', error);
+      throw error;
+    }
+  }
+
   // Submission operations
   async getSubmissions(): Promise<Submission[]> {
     const { data, error } = await this.supabase
