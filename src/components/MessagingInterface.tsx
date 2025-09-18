@@ -83,7 +83,7 @@ export default function MessagingInterface({
                         </p>
                       )}
                       <p className="text-xs text-gray-400 mt-1">
-                        {conversation.last_message_at.toLocaleDateString()}
+                        {new Date(conversation.last_message_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
