@@ -59,7 +59,7 @@ a {
     --brand-primary: 217 91% 20%; /* Default CCBI blue */
     --brand-secondary: 142 76% 20%; /* Default CCBI green */
     --brand-accent: 45 93% 47%; /* Default CCBI gold */
-    --brand-name: "CCBI Classroom";
+    --brand-name: "Classroom Management System";
     --brand-description: "Equipping Believers for Every Good Work";
   }
   .dark {

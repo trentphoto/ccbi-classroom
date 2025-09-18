@@ -974,7 +974,7 @@ export default function AdminDashboard() {
                       <div className="grid flex-1 text-left text-sm leading-tight ml-3">
                         <span className="truncate font-medium text-white">{user?.name || 'Admin User'}</span>
                         <span className="text-[#d2ac47] truncate text-xs">
-                          {user?.email || 'admin@ccbinstitute.org'}
+                          {user?.email || 'admin@example.com'}
                         </span>
                       </div>
                       <MoreVertical className="ml-auto h-4 w-4 text-white" />
@@ -1006,7 +1006,7 @@ export default function AdminDashboard() {
           <div className="mb-8">
             <div>
               <h2 className="text-3xl font-bold text-gray-900">Admin Dashboard</h2>
-              <p className="mt-2 text-gray-600">Manage all CCBI classes here.</p>
+              <p className="mt-2 text-gray-600">Manage all classrooms here.</p>
             </div>
           </div>
 

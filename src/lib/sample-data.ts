@@ -18,7 +18,7 @@ export const sampleUsers: User[] = [
   // Students for MTh MDiv class
   {
     id: 'user2',
-    email: 'michael.chen@ccbinstitute.org',
+    email: 'michael.chen@example.com',
     role: UserRole.STUDENT,
     name: 'Michael Chen',
     brand_id: getDefaultBrandId(),
@@ -28,7 +28,7 @@ export const sampleUsers: User[] = [
   },
   {
     id: 'user3',
-    email: 'emily.rodriguez@ccbinstitute.org',
+    email: 'emily.rodriguez@example.com',
     role: UserRole.STUDENT,
     name: 'Emily Rodriguez',
     brand_id: getDefaultBrandId(),
@@ -38,7 +38,7 @@ export const sampleUsers: User[] = [
   },
   {
     id: 'user4',
-    email: 'david.thompson@ccbinstitute.org',
+    email: 'david.thompson@example.com',
     role: UserRole.STUDENT,
     name: 'David Thompson',
     brand_id: getDefaultBrandId(),
@@ -50,7 +50,7 @@ export const sampleUsers: User[] = [
   // Students for TuFr MDiv class
   {
     id: 'user5',
-    email: 'jessica.williams@ccbinstitute.org',
+    email: 'jessica.williams@example.com',
     role: UserRole.STUDENT,
     name: 'Jessica Williams',
     brand_id: getDefaultBrandId(),
@@ -60,7 +60,7 @@ export const sampleUsers: User[] = [
   },
   {
     id: 'user6',
-    email: 'robert.davis@ccbinstitute.org',
+    email: 'robert.davis@example.com',
     role: UserRole.STUDENT,
     name: 'Robert Davis',
     brand_id: getDefaultBrandId(),
@@ -70,7 +70,7 @@ export const sampleUsers: User[] = [
   },
   {
     id: 'user7',
-    email: 'amanda.martinez@ccbinstitute.org',
+    email: 'amanda.martinez@example.com',
     role: UserRole.STUDENT,
     name: 'Amanda Martinez',
     brand_id: getDefaultBrandId(),

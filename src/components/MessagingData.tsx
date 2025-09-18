@@ -16,7 +16,7 @@ export const sampleConversations: ConversationWithMessages[] = [
     created_at: new Date('2024-01-20T09:00:00Z'),
     student: {
       id: 'user2',
-      email: 'michael.chen@ccbinstitute.org',
+      email: 'michael.chen@example.com',
       role: UserRole.STUDENT,
       name: 'Michael Chen',
       brand_id: getDefaultBrandId(),
@@ -80,7 +80,7 @@ export const sampleConversations: ConversationWithMessages[] = [
     created_at: new Date('2024-01-21T11:00:00Z'),
     student: {
       id: 'user3',
-      email: 'emily.rodriguez@ccbinstitute.org',
+      email: 'emily.rodriguez@example.com',
       role: UserRole.STUDENT,
       name: 'Emily Rodriguez',
       brand_id: getDefaultBrandId(),
