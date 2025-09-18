@@ -40,12 +40,12 @@ ALTER TABLE classes ADD COLUMN brand_id TEXT NOT NULL DEFAULT 'ccbi';
 All brand-specific settings are centralized in `src/lib/brand.ts` and include:
 
 ### **CCBI Brand**
-- Name: "CCBI Classroom" (Calvary Chapel Bible Institute)
+- Name: "CCBI Classroom" (Capitol City Bible Institute)
 - Logo: `/logos/ccbi.svg`
 - Colors: Blue (#072c68), Green (#086623), Gold (#d2ac47)
 - Description: "Equipping Believers for Every Good Work"
 - Contact: support@ccbi.org, admin@ccbi.org
-- Website: https://ccbi.org
+- Website: https://ccbinstitute.org
 
 ### **ZTS Brand**
 - Name: "ZTS Classroom" (Zion Theological Seminary)
@@ -53,7 +53,7 @@ All brand-specific settings are centralized in `src/lib/brand.ts` and include:
 - Colors: Blue (#1e40af), Green (#059669), Amber (#f59e0b)
 - Description: "Equipping Students for Success"
 - Contact: support@zts.edu, admin@zts.edu
-- Website: https://zts.edu
+- Website: https://ziontheologicalseminary.org
 
 ### **Centralized Configuration Features**
 - **Visual Identity**: Logos, colors, branding
