@@ -21,10 +21,12 @@ npm run build:zts   # ZTS build
 ### **Environment Variables**
 ```bash
 # .env.local
-NEXT_PUBLIC_BRAND_ID=ccbi  # or 'zts'
+NEXT_PUBLIC_BRAND_ID=ccbi  # or 'zts' - ONLY brand-specific env var needed!
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 ```
+
+**Note**: All brand-specific settings (colors, logos, contact info, features, etc.) are now configured in code at `src/lib/brand.ts`. Only the `BRAND_ID` environment variable is needed to switch between brands.
 
 ### **Database Setup**
 Add `brand_id` column to `users` and `classes` tables:
@@ -35,17 +37,30 @@ ALTER TABLE classes ADD COLUMN brand_id TEXT NOT NULL DEFAULT 'ccbi';
 
 ## 🎨 **Brand Configuration**
 
+All brand-specific settings are centralized in `src/lib/brand.ts` and include:
+
 ### **CCBI Brand**
-- Name: "CCBI Classroom"
+- Name: "CCBI Classroom" (Calvary Chapel Bible Institute)
 - Logo: `/logos/ccbi.svg`
 - Colors: Blue (#072c68), Green (#086623), Gold (#d2ac47)
 - Description: "Equipping Believers for Every Good Work"
+- Contact: support@ccbi.org, admin@ccbi.org
+- Website: https://ccbi.org
 
 ### **ZTS Brand**
-- Name: "ZTS Classroom"
+- Name: "ZTS Classroom" (Zion Theological Seminary)
 - Logo: `/logos/zts.png`
 - Colors: Blue (#1e40af), Green (#059669), Amber (#f59e0b)
 - Description: "Equipping Students for Success"
+- Contact: support@zts.edu, admin@zts.edu
+- Website: https://zts.edu
+
+### **Centralized Configuration Features**
+- **Visual Identity**: Logos, colors, branding
+- **Contact Information**: Support emails, admin emails, websites
+- **Feature Flags**: Enable/disable features per brand
+- **Default Settings**: File upload limits, allowed file types
+- **Utility Functions**: Easy access to brand-specific values
 
 ## 📁 **File Structure**
 
@@ -93,3 +108,7 @@ Each brand gets its own deployment:
 3. **Performance**: Smaller, faster builds
 4. **Maintainability**: Easy to understand and modify
 5. **Isolation**: Each brand is completely independent
+6. **Minimal Environment Variables**: Only `BRAND_ID` needed - all other settings in code
+7. **Centralized Configuration**: All brand settings in one place (`src/lib/brand.ts`)
+8. **Type Safety**: Full TypeScript support with proper brand types
+9. **Easy Customization**: Add new brands or modify existing ones in code

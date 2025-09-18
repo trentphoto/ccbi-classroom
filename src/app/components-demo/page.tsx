@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { User, UserRole, Class, Lesson, Submission } from '@/types/db';
+import { getDefaultBrandId, getAdminEmail } from '@/lib/brand';
 import MessagingInterface from '@/components/MessagingInterface';
 import { sampleConversations } from '@/components/MessagingData';
 import StudentMessaging from '@/components/StudentMessaging';
@@ -16,10 +17,10 @@ export default function ComponentsDemoPage() {
   // Sample data for demo
   const sampleUser: User = {
     id: 'user1',
-    email: 'admin@ccbinstitute.org',
+    email: getAdminEmail(),
     role: UserRole.ADMIN,
     name: 'Admin User',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     deactivated_at: null,
     created_at: new Date('2024-01-15')
@@ -29,7 +30,7 @@ export default function ComponentsDemoPage() {
     id: 'class1',
     name: 'April 2025 MTh MDiv',
     description: 'Master of Divinity Program - Monday/Thursday Schedule',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     created_at: new Date('2024-01-15'),
     updated_at: new Date('2024-01-15')

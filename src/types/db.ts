@@ -4,7 +4,10 @@ export enum UserRole {
     STUDENT = 'student',
   }
 
-// Define enum for brand types
+// Define brand types
+export type BrandId = 'ccbi' | 'zts';
+
+// Define enum for brand types (for backward compatibility)
 export enum BrandType {
     CCBI = 'ccbi',
     ZTS = 'zts',
@@ -27,7 +30,7 @@ export enum BrandType {
     id: string; // UUID
     name: string;
     description: string;
-    brand_id: string; // Brand identifier ('ccbi' or 'zts')
+    brand_id: BrandId; // Brand identifier ('ccbi' or 'zts')
     is_active: boolean;
     created_at: Date; // Required timestamp
     updated_at: Date; // Required timestamp

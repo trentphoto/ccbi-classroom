@@ -1,14 +1,15 @@
 import { User, Class, Lesson, Submission, UserRole, ClassEnrollment, Conversation, Message } from '@/types/db';
+import { getDefaultBrandId, getSupportEmail, getAdminEmail } from './brand';
 
 // Sample Users
 export const sampleUsers: User[] = [
   // Admin
   {
     id: 'user1',
-    email: 'admin@ccbinstitute.org',
+    email: getAdminEmail(),
     role: UserRole.ADMIN,
     name: 'Admin User',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     deactivated_at: null,
     created_at: new Date('2024-01-15')
@@ -20,7 +21,7 @@ export const sampleUsers: User[] = [
     email: 'michael.chen@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Michael Chen',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     deactivated_at: null,
     created_at: new Date('2024-01-20')
@@ -30,7 +31,7 @@ export const sampleUsers: User[] = [
     email: 'emily.rodriguez@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Emily Rodriguez',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     deactivated_at: null,
     created_at: new Date('2024-01-20')
@@ -40,7 +41,7 @@ export const sampleUsers: User[] = [
     email: 'david.thompson@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'David Thompson',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: false, // Example of an inactive student
     deactivated_at: new Date('2024-02-15'), // Example deactivation date
     created_at: new Date('2024-01-20')
@@ -52,7 +53,7 @@ export const sampleUsers: User[] = [
     email: 'jessica.williams@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Jessica Williams',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     deactivated_at: null,
     created_at: new Date('2024-01-20')
@@ -62,7 +63,7 @@ export const sampleUsers: User[] = [
     email: 'robert.davis@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Robert Davis',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     deactivated_at: null,
     created_at: new Date('2024-01-20')
@@ -72,7 +73,7 @@ export const sampleUsers: User[] = [
     email: 'amanda.martinez@ccbinstitute.org',
     role: UserRole.STUDENT,
     name: 'Amanda Martinez',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     deactivated_at: null,
     created_at: new Date('2024-01-20')
@@ -85,7 +86,7 @@ export const sampleClasses: Class[] = [
     id: 'class1',
     name: 'April 2025 MTh MDiv',
     description: 'Master of Divinity Program - Monday/Thursday Schedule. Advanced theological studies focusing on biblical studies, pastoral care, and ministry leadership.',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     created_at: new Date('2024-01-15'),
     updated_at: new Date('2024-01-15')
@@ -94,7 +95,7 @@ export const sampleClasses: Class[] = [
     id: 'class2',
     name: 'May 2025 TuFr MDiv',
     description: 'Master of Divinity Program - Tuesday/Friday Schedule. Comprehensive theological education with emphasis on practical ministry skills and spiritual formation.',
-    brand_id: 'ccbi',
+    brand_id: getDefaultBrandId(),
     is_active: true,
     created_at: new Date('2024-01-15'),
     updated_at: new Date('2024-01-15')
