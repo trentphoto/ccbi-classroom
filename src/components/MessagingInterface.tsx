@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState } from 'react';
-import { User, Conversation, UserRole } from '@/types/db';
+import { User, Conversation, ConversationWithMessages, UserRole } from '@/types/db';
 import ChatInterface from './ChatInterface';
 
 interface MessagingInterfaceProps {
-  conversations: Conversation[];
+  conversations: ConversationWithMessages[];
   currentUser: User;
   selectedClassId: string;
 }

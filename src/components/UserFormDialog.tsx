@@ -38,6 +38,7 @@ export default function UserFormDialog({
     name: '',
     email: '',
     role: UserRole.STUDENT, // Always set to student
+    brand_id: 'ccbi', // Default brand
     is_active: true,
     deactivated_at: null as Date | null
   });
@@ -49,6 +50,7 @@ export default function UserFormDialog({
         name: user.name,
         email: user.email,
         role: user.role, // Use the actual user role instead of always setting to STUDENT
+        brand_id: user.brand_id,
         is_active: user.is_active,
         deactivated_at: user.deactivated_at
       });
@@ -57,6 +59,7 @@ export default function UserFormDialog({
         name: '',
         email: '',
         role: UserRole.STUDENT, // Always set to student
+        brand_id: 'ccbi', // Default brand
         is_active: true,
         deactivated_at: null
       });

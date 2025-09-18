@@ -1,10 +1,10 @@
 "use client";
 
 import React from 'react';
-import { User, Conversation, Message, UserRole } from '@/types/db';
+import { User, Conversation, ConversationWithMessages, Message, UserRole } from '@/types/db';
 
 // Sample messaging data for future use
-export const sampleConversations: Conversation[] = [
+export const sampleConversations: ConversationWithMessages[] = [
   {
     id: 'conv1',
     student_id: 'user2',
@@ -18,6 +18,9 @@ export const sampleConversations: Conversation[] = [
       email: 'michael.chen@ccbinstitute.org',
       role: UserRole.STUDENT,
       name: 'Michael Chen',
+      brand_id: 'ccbi',
+      is_active: true,
+      deactivated_at: null,
       created_at: new Date('2024-01-20')
     },
     teacher: {
@@ -25,12 +28,16 @@ export const sampleConversations: Conversation[] = [
       email: 'admin@ccbinstitute.org',
       role: UserRole.ADMIN,
       name: 'Admin User',
+      brand_id: 'ccbi',
+      is_active: true,
+      deactivated_at: null,
       created_at: new Date('2024-01-15')
     },
     class: {
       id: 'class1',
       name: 'April 2025 MTh MDiv',
       description: 'Master of Divinity Program - Monday/Thursday Schedule',
+      brand_id: 'ccbi',
       is_active: true,
       created_at: new Date('2024-01-15'),
       updated_at: new Date('2024-01-15')
@@ -75,6 +82,9 @@ export const sampleConversations: Conversation[] = [
       email: 'emily.rodriguez@ccbinstitute.org',
       role: UserRole.STUDENT,
       name: 'Emily Rodriguez',
+      brand_id: 'ccbi',
+      is_active: true,
+      deactivated_at: null,
       created_at: new Date('2024-01-20')
     },
     teacher: {
@@ -82,12 +92,16 @@ export const sampleConversations: Conversation[] = [
       email: 'admin@ccbinstitute.org',
       role: UserRole.ADMIN,
       name: 'Admin User',
+      brand_id: 'ccbi',
+      is_active: true,
+      deactivated_at: null,
       created_at: new Date('2024-01-15')
     },
     class: {
       id: 'class1',
       name: 'April 2025 MTh MDiv',
       description: 'Master of Divinity Program - Monday/Thursday Schedule',
+      brand_id: 'ccbi',
       is_active: true,
       created_at: new Date('2024-01-15'),
       updated_at: new Date('2024-01-15')
@@ -135,8 +149,8 @@ export const createConversation = (
   studentId: string,
   teacherId: string,
   classId: string
-): Conversation => {
-  const newConversation: Conversation = {
+): ConversationWithMessages => {
+  const newConversation: ConversationWithMessages = {
     id: `conv${Date.now()}`,
     student_id: studentId,
     teacher_id: teacherId,
@@ -149,6 +163,9 @@ export const createConversation = (
       email: '',
       role: UserRole.STUDENT,
       name: '',
+      brand_id: 'ccbi',
+      is_active: true,
+      deactivated_at: null,
       created_at: new Date()
     },
     teacher: {
@@ -156,12 +173,16 @@ export const createConversation = (
       email: '',
       role: UserRole.ADMIN,
       name: '',
+      brand_id: 'ccbi',
+      is_active: true,
+      deactivated_at: null,
       created_at: new Date()
     },
     class: {
       id: classId,
       name: '',
       description: '',
+      brand_id: 'ccbi',
       is_active: true,
       created_at: new Date(),
       updated_at: new Date()

@@ -19,6 +19,9 @@ export default function ComponentsDemoPage() {
     email: 'admin@ccbinstitute.org',
     role: UserRole.ADMIN,
     name: 'Admin User',
+    brand_id: 'ccbi',
+    is_active: true,
+    deactivated_at: null,
     created_at: new Date('2024-01-15')
   };
 
@@ -26,6 +29,7 @@ export default function ComponentsDemoPage() {
     id: 'class1',
     name: 'April 2025 MTh MDiv',
     description: 'Master of Divinity Program - Monday/Thursday Schedule',
+    brand_id: 'ccbi',
     is_active: true,
     created_at: new Date('2024-01-15'),
     updated_at: new Date('2024-01-15')

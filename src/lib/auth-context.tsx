@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types/db';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/database';
 
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loadUserFromSession = async (authUser: any) => {
+  const loadUserFromSession = async (authUser: SupabaseUser) => {
     try {
       // Try to get user from our database first
       const dbUser = await db.getUserById(authUser.id);

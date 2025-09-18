@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import BrandedHeader from '@/components/BrandedHeader';
-import BrandedFooter from '@/components/BrandedFooter';
+import SimpleHeader from '@/components/SimpleHeader';
+import SimpleFooter from '@/components/SimpleFooter';
 import { db } from '@/lib/supabase/database';
 import { Submission, User, Lesson, Class } from '@/types/db';
 import { 
@@ -124,7 +124,7 @@ export default function SubmissionsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <BrandedHeader />
+        <SimpleHeader />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -133,7 +133,7 @@ export default function SubmissionsPage() {
             </div>
           </div>
         </div>
-        <BrandedFooter />
+        <SimpleFooter />
       </div>
     );
   }
@@ -141,7 +141,7 @@ export default function SubmissionsPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <BrandedHeader />
+        <SimpleHeader />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
@@ -151,14 +151,14 @@ export default function SubmissionsPage() {
             </div>
           </div>
         </div>
-        <BrandedFooter />
+        <SimpleFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BrandedHeader />
+      <SimpleHeader />
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
@@ -366,7 +366,7 @@ export default function SubmissionsPage() {
         </div>
       </div>
       
-      <BrandedFooter />
+      <SimpleFooter />
     </div>
   );
 }

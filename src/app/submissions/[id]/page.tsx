@@ -138,7 +138,7 @@ export default function SubmissionReviewPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BrandedHeader />
+      <SimpleHeader />
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -359,7 +359,7 @@ export default function SubmissionReviewPage() {
         </div>
       </div>
       
-      <BrandedFooter />
+      <SimpleFooter />
     </div>
   );
 }
