@@ -96,6 +96,26 @@ export interface ConversationWithMessages extends Conversation {
   teacher: User;
   class: Class;
 }
+
+// Type for Class Meeting entity - matches Supabase class_meetings table
+export interface ClassMeeting {
+  id: string; // UUID
+  class_id: string; // UUID
+  meeting_date: Date;
+  meeting_title: string;
+  created_at: Date; // Required timestamp
+}
+
+// Type for Attendance Record entity - matches Supabase attendance_records table
+export interface AttendanceRecord {
+  id: string; // UUID
+  meeting_id: string; // UUID
+  student_id: string; // UUID
+  status: 'present' | 'absent' | 'late' | 'excused';
+  notes: string | null;
+  verified_by: string | null; // UUID of admin who verified
+  created_at: Date; // Required timestamp
+}
   
   // Optional: Composite types for frontend views
 // E.g., a StudentDashboard type that combines data
