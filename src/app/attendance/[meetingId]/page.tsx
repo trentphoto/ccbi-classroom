@@ -371,6 +371,47 @@ export default function MeetingPage() {
   
   const fuzzyStats = getFuzzyMatchStats();
 
+  // Generate attendance report text
+  const generateAttendanceReport = () => {
+    const presentRecords = attendanceRecords.filter(r => r.status === 'present');
+    const presentStudents = presentRecords.map(record => {
+      const student = students.find(s => s.id === record.student_id);
+      return student?.name || 'Unknown Student';
+    }).sort();
+
+    const absentStudents = students
+      .filter(student => !attendanceRecords.some(record => record.student_id === student.id && record.status === 'present'))
+      .map(student => student.name)
+      .sort();
+
+    const attendanceRate = students.length > 0 ? Math.round((presentRecords.length / students.length) * 100) : 0;
+
+    let report = `Total Enrolled: ${students.length}\n`;
+    report += `-- Total Attendees: ${presentRecords.length}\n`;
+    report += `-- Present: ${presentRecords.length}/${students.length} (${attendanceRate}%)\n`;
+    report += `-- Absent: ${absentStudents.length}\n\n`;
+
+    if (presentStudents.length > 0) {
+      report += `Attendance: ${presentStudents.length}\n`;
+      presentStudents.forEach(name => {
+        report += `${name}\n`;
+      });
+    } else {
+      report += `Attendance: 0\n`;
+    }
+
+    if (absentStudents.length > 0) {
+      report += `\nAbsent: ${absentStudents.length}\n`;
+      absentStudents.forEach(name => {
+        report += `${name}\n`;
+      });
+    } else {
+      report += `\nAbsent: 0\n`;
+    }
+
+    return report;
+  };
+
   // Show loading state
   if (authLoading || isLoading) {
     return (
@@ -660,6 +701,45 @@ export default function MeetingPage() {
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Text Report Template */}
+            <div className="bg-white rounded-lg shadow-sm border">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Attendance Report</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Text format for easy copying and sharing
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      const reportText = generateAttendanceReport();
+                      navigator.clipboard.writeText(reportText).then(() => {
+                        toast.success('Report copied to clipboard!');
+                      }).catch(() => {
+                        toast.error('Failed to copy report');
+                      });
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy Report
+                  </Button>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
+                    {generateAttendanceReport()}
+                  </pre>
+                </div>
               </div>
             </div>
           </div>
