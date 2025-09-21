@@ -1,5 +1,5 @@
 import { createClient } from './client';
-import { Class, User, Lesson, Submission, ClassEnrollment, UserRole } from '@/types/db';
+import { Class, User, Lesson, Submission, ClassEnrollment, UserRole, ClassMeeting, AttendanceRecord } from '@/types/db';
 import { CURRENT_BRAND_ID } from '@/lib/brand';
 
 // Database service class for all Supabase operations
@@ -171,87 +171,104 @@ export class DatabaseService {
     return data;
   }
 
+  async getUserByEmail(email: string): Promise<User | null> {
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('email', email.toLowerCase())
+      .eq('brand_id', this.brandId)
+      .single();
+
+    if (error) {
+      // If no user found, return null (don't log as error)
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      console.error('Error fetching user by email:', error);
+      return null;
+    }
+
+    return data;
+  }
+
   async createUser(userData: Omit<User, 'id' | 'created_at'>): Promise<User> {
     try {
-      console.log('Starting createUser process for:', userData.email);
-
-      // First, create the user account via Supabase Auth
-      console.log('Step 1: Creating auth account...');
-      const { data: authData, error: authError } = await this.supabase.auth.signUp({
-        email: userData.email,
-        password: 'TempPass123!', // Temporary password - user will need to reset
-        options: {
-          data: {
-            name: userData.name,
-            role: userData.role
-          }
-        }
+      // Use Supabase function to create user (bypasses RLS issues)
+      const { data: result, error: functionError } = await this.supabase.rpc('create_user_profile', {
+        user_email: userData.email,
+        user_name: userData.name,
+        user_role: userData.role,
+        user_brand_id: this.brandId
       });
 
-      console.log('Auth result:', { user: authData?.user?.id, error: authError });
-
-      if (authError) {
-        console.error('Auth signup error:', authError);
-        throw new Error(`Failed to create user account: ${authError.message}`);
+      if (functionError) {
+        console.error('Function error:', functionError);
+        throw new Error(`Failed to create user profile: ${functionError.message}`);
       }
 
-      if (!authData.user) {
-        throw new Error('Failed to create user account - no user data returned');
+      if (!result?.success) {
+        console.error('Function returned error:', result);
+        throw new Error(`Failed to create user profile: ${result?.error || 'Unknown error'}`);
       }
 
-      console.log('Auth user created successfully:', authData.user.id);
-
-      // Then create the user profile in the users table
-      console.log('Step 2: Creating user profile...');
-      const profileInsertData = {
-        id: authData.user.id,
-        email: userData.email,
-        name: userData.name,
-        role: userData.role,
-        brand_id: this.brandId, // Add brand_id to user profile
-        is_active: userData.is_active ?? true, // Default to true if not provided
-        deactivated_at: null // New users are never deactivated
-      };
-      console.log('Profile insert data:', profileInsertData);
-
-      // Debug: Check current user authentication
-      const { data: currentUser } = await this.supabase.auth.getUser();
-      console.log('Current authenticated user:', currentUser?.user?.id);
-
-      // Debug: Check if current user is admin
-      if (currentUser?.user?.id) {
-        const { data: adminCheck } = await this.supabase
-          .from('users')
-          .select('role')
-          .eq('id', currentUser.user.id)
-          .single();
-        console.log('Current user role check:', adminCheck);
+      if (!result.user) {
+        throw new Error('User creation succeeded but no user data returned');
       }
 
-      const { data: profileData, error: profileError } = await this.supabase
-        .from('users')
-        .insert([profileInsertData])
-        .select()
-        .single();
-
-      console.log('Profile creation result:', { data: profileData, error: profileError });
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        console.error('Full profile error details:', JSON.stringify(profileError, null, 2));
-        throw new Error(`Failed to create user profile: ${profileError.message}`);
-      }
-
-      if (!profileData) {
-        throw new Error('Profile creation succeeded but no data returned');
-      }
-
-      console.log('User created successfully:', profileData);
-      return profileData;
+      return result.user;
     } catch (error) {
       console.error('Error in createUser:', error);
-      console.error('Full error details:', JSON.stringify(error, null, 2));
       throw error;
+    }
+  }
+
+  // Invite user via email - creates auth user and sends invitation using Supabase function
+  async inviteUserViaEmail(userId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('Starting invite process for user ID:', userId);
+
+      // Get user details from our database
+      const { data: userData, error: userError } = await this.supabase
+        .from('users')
+        .select('email, name, role, is_active')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !userData) {
+        console.error('User not found:', userError);
+        return { success: false, message: 'User not found' };
+      }
+
+      // Check if user is already active
+      if (userData.is_active) {
+        console.log('User is already active');
+        return { success: false, message: 'User is already invited' };
+      }
+
+      // Call Supabase function to create auth user and send invitation
+      console.log('Calling Supabase function to invite user...');
+      const { data: result, error: functionError } = await this.supabase.rpc('invite_user', {
+        user_id: userId,
+        user_email: userData.email,
+        user_name: userData.name
+      });
+
+      if (functionError) {
+        console.error('Function error:', functionError);
+        return { success: false, message: `Failed to send invitation: ${functionError.message}` };
+      }
+
+      if (result?.success) {
+        // Update the user status locally
+        await this.updateUser(userId, { is_active: true });
+        return { success: true, message: `Invitation sent to ${userData.email}` };
+      }
+
+      return { success: false, message: result?.message || 'Failed to send invitation' };
+
+    } catch (error) {
+      console.error('Error in inviteUserViaEmail:', error);
+      return { success: false, message: 'Failed to send invitation' };
     }
   }
 
@@ -284,29 +301,34 @@ export class DatabaseService {
   async deactivateUser(id: string): Promise<User> {
     try {
       const deactivationTime = new Date().toISOString();
-      const { data, error } = await this.supabase
+
+      // Add timeout to prevent hanging
+      const queryPromise = this.supabase
         .from('users')
-        .update({ 
-          is_active: false, 
-          deactivated_at: deactivationTime 
+        .update({
+          is_active: false,
+          deactivated_at: deactivationTime
         })
         .eq('id', id)
         .select()
         .single();
 
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database query timeout - check your connection and permissions')), 10000); // 10 second timeout
+      });
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
       if (error) {
-        console.error('Error deactivating user:', error);
         throw new Error(`Failed to deactivate user: ${error.message}`);
       }
 
       if (!data) {
-        console.error('No data returned from deactivation');
         throw new Error('No data returned from deactivation');
       }
 
       return data;
     } catch (error) {
-      console.error('Exception in deactivateUser:', error);
       throw error;
     }
   }
@@ -339,6 +361,45 @@ export class DatabaseService {
     }
 
     return data;
+  }
+
+  async getEnrollmentsByClass(classId: string): Promise<ClassEnrollment[]> {
+    const { data, error } = await this.supabase
+      .from('class_enrollments')
+      .select('*')
+      .eq('class_id', classId)
+      .order('enrolled_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching enrollments by class:', error);
+      throw new Error('Failed to fetch enrollments by class');
+    }
+
+    return data || [];
+  }
+
+  async getStudentsByClass(classId: string): Promise<User[]> {
+    const { data, error } = await this.supabase
+      .from('class_enrollments')
+      .select(`
+        user_id,
+        users!inner(*)
+      `)
+      .eq('class_id', classId)
+      .eq('users.role', 'student')
+      .eq('users.is_active', true);
+
+    if (error) {
+      console.error('Error fetching students by class:', error);
+      throw new Error('Failed to fetch students by class');
+    }
+
+    // Sort the results by user name after fetching
+    const sortedData = data?.sort((a: any, b: any) => 
+      a.users.name.localeCompare(b.users.name)
+    ) || [];
+
+    return sortedData.map((enrollment: any) => enrollment.users);
   }
 
   async createEnrollment(enrollmentData: Omit<ClassEnrollment, 'enrolled_at'>): Promise<ClassEnrollment> {
@@ -548,6 +609,210 @@ export class DatabaseService {
       isAdmin: userData?.role === 'admin',
       authStatus: 'authenticated'
     };
+  }
+
+  // Class Meeting operations
+  async getClassMeetings(): Promise<ClassMeeting[]> {
+    const { data, error } = await this.supabase
+      .from('class_meetings')
+      .select(`
+        *,
+        classes!inner(brand_id)
+      `)
+      .eq('classes.brand_id', this.brandId)
+      .order('meeting_date', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching class meetings:', error);
+      throw new Error('Failed to fetch class meetings');
+    }
+
+    return data || [];
+  }
+
+  async getClassMeetingsByClass(classId: string): Promise<ClassMeeting[]> {
+    const { data, error } = await this.supabase
+      .from('class_meetings')
+      .select(`
+        *,
+        classes!inner(brand_id)
+      `)
+      .eq('class_id', classId)
+      .eq('classes.brand_id', this.brandId)
+      .order('meeting_date', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching class meetings by class:', error);
+      throw new Error('Failed to fetch class meetings');
+    }
+
+    return data || [];
+  }
+
+  async createClassMeeting(meetingData: Omit<ClassMeeting, 'id' | 'created_at'>): Promise<ClassMeeting> {
+    const { data, error } = await this.supabase
+      .from('class_meetings')
+      .insert([meetingData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating class meeting:', error);
+      throw new Error('Failed to create class meeting');
+    }
+
+    return data;
+  }
+
+  async updateClassMeeting(id: string, updates: Partial<Omit<ClassMeeting, 'id' | 'created_at'>>): Promise<ClassMeeting> {
+    const { data, error } = await this.supabase
+      .from('class_meetings')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating class meeting:', error);
+      throw new Error('Failed to update class meeting');
+    }
+
+    return data;
+  }
+
+  async deleteClassMeeting(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('class_meetings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting class meeting:', error);
+      throw new Error('Failed to delete class meeting');
+    }
+  }
+
+  // Attendance Record operations
+  async getAttendanceRecords(): Promise<AttendanceRecord[]> {
+    const { data, error } = await this.supabase
+      .from('attendance_records')
+      .select(`
+        *,
+        class_meetings!inner(
+          class_id,
+          classes!inner(brand_id)
+        )
+      `)
+      .eq('class_meetings.classes.brand_id', this.brandId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching attendance records:', error);
+      throw new Error('Failed to fetch attendance records');
+    }
+
+    return data || [];
+  }
+
+  async getAttendanceRecordsByMeeting(meetingId: string): Promise<AttendanceRecord[]> {
+    const { data, error } = await this.supabase
+      .from('attendance_records')
+      .select(`
+        *,
+        class_meetings!inner(
+          class_id,
+          classes!inner(brand_id)
+        )
+      `)
+      .eq('meeting_id', meetingId)
+      .eq('class_meetings.classes.brand_id', this.brandId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching attendance records by meeting:', error);
+      throw new Error('Failed to fetch attendance records');
+    }
+
+    return data || [];
+  }
+
+  async getAttendanceRecordsByStudent(studentId: string): Promise<AttendanceRecord[]> {
+    const { data, error } = await this.supabase
+      .from('attendance_records')
+      .select(`
+        *,
+        class_meetings!inner(
+          class_id,
+          classes!inner(brand_id)
+        )
+      `)
+      .eq('student_id', studentId)
+      .eq('class_meetings.classes.brand_id', this.brandId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching attendance records by student:', error);
+      throw new Error('Failed to fetch attendance records');
+    }
+
+    return data || [];
+  }
+
+  async createAttendanceRecord(recordData: Omit<AttendanceRecord, 'id' | 'created_at'>): Promise<AttendanceRecord> {
+    const { data, error } = await this.supabase
+      .from('attendance_records')
+      .insert([recordData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating attendance record:', error);
+      throw new Error('Failed to create attendance record');
+    }
+
+    return data;
+  }
+
+  async createAttendanceRecords(recordsData: Omit<AttendanceRecord, 'id' | 'created_at'>[]): Promise<AttendanceRecord[]> {
+    const { data, error } = await this.supabase
+      .from('attendance_records')
+      .insert(recordsData)
+      .select();
+
+    if (error) {
+      console.error('Error creating attendance records:', error);
+      throw new Error('Failed to create attendance records');
+    }
+
+    return data || [];
+  }
+
+  async updateAttendanceRecord(id: string, updates: Partial<Omit<AttendanceRecord, 'id' | 'created_at'>>): Promise<AttendanceRecord> {
+    const { data, error } = await this.supabase
+      .from('attendance_records')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating attendance record:', error);
+      throw new Error('Failed to update attendance record');
+    }
+
+    return data;
+  }
+
+  async deleteAttendanceRecord(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('attendance_records')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting attendance record:', error);
+      throw new Error('Failed to delete attendance record');
+    }
   }
 }
 

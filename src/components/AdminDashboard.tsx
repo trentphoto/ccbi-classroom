@@ -12,22 +12,20 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { db } from '@/lib/supabase/database';
-import SimpleHeader from './SimpleHeader';
-import SimpleFooter from './SimpleFooter';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { MoreVertical, LogOut, User as UserIcon, Settings } from 'lucide-react';
+import { MoreVertical, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import UserFormDialog from './UserFormDialog';
 import ClassFormDialog from './ClassFormDialog';
 import LessonFormDialog from './LessonFormDialog';
+import RosterImportDialog from './RosterImportDialog';
 
-type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'messages';
+type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'attendance' | 'messages';
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   
   // State for data
@@ -55,12 +53,17 @@ export default function AdminDashboard() {
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
   const [userFormError, setUserFormError] = useState<string | null>(null);
   const [showActiveStudents, setShowActiveStudents] = useState<boolean>(true);
+  const [invitingUsers, setInvitingUsers] = useState<Set<string>>(new Set());
   
   // Lesson dialog state
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [lessonDialogMode, setLessonDialogMode] = useState<'create' | 'edit'>('create');
   const [isSubmittingLesson, setIsSubmittingLesson] = useState(false);
+  
+  // Roster import dialog state
+  const [rosterImportOpen, setRosterImportOpen] = useState(false);
+  const [isImportingRoster, setIsImportingRoster] = useState(false);
   
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -351,20 +354,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      // Clear localStorage on logout
-      try {
-        localStorage.removeItem('adminSelectedClassId');
-      } catch (error) {
-        console.warn('Could not clear localStorage:', error);
-      }
-      await logout();
-      router.push('/login');
-    } catch (err) {
-      console.error('Error logging out:', err);
-    }
-  };
 
 
 
@@ -522,10 +511,72 @@ export default function AdminDashboard() {
     setLessonDialogOpen(true);
   };
 
+  // Handle roster import
+  const handleRosterImport = () => {
+    if (!selectedClassId) {
+      toast.error('Please select a class first');
+      return;
+    }
+    setRosterImportOpen(true);
+  };
+
+  // Handle roster import completion
+  const handleRosterImportComplete = (importedStudents: User[], skippedUsers: Array<{ name: string; email: string; reason: string }>) => {
+    // Add the imported students to the users state
+    setUsers(prev => [...prev, ...importedStudents]);
+
+    // Refresh enrollments to include the new ones
+    db.getEnrollments().then(updatedEnrollments => {
+      setEnrollments(updatedEnrollments);
+    }).catch(err => {
+      console.error('Error refreshing enrollments:', err);
+    });
+
+    if (importedStudents.length > 0) {
+      toast.success(`✅ Imported ${importedStudents.length} students successfully (no emails sent - ready for manual invitation)`);
+    } else {
+      toast.warning('⚠️ Import completed but no students were imported. Check the CSV format and try again.');
+    }
+
+    // Show notification for skipped users
+    if (skippedUsers.length > 0) {
+      toast.warning(`⚠️ ${skippedUsers.length} user${skippedUsers.length === 1 ? '' : 's'} were skipped due to duplicate email addresses.`);
+    }
+  };
+
+  // Handle user invitation
+  const handleInviteUser = async (user: User) => {
+    if (invitingUsers.has(user.id)) return; // Already inviting
+
+    setInvitingUsers(prev => new Set(prev).add(user.id));
+
+    try {
+      const result = await db.inviteUserViaEmail(user.id);
+
+      if (result.success) {
+        toast.success(result.message);
+        // Refresh user data to update the UI
+        const updatedUsers = await db.getUsers();
+        setUsers(updatedUsers);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Error inviting user:', error);
+      toast.error('Failed to send invitation');
+    } finally {
+      setInvitingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(user.id);
+        return newSet;
+      });
+    }
+  };
+
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
@@ -537,7 +588,7 @@ export default function AdminDashboard() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <Button onClick={loadData}>Retry</Button>
@@ -550,7 +601,7 @@ export default function AdminDashboard() {
   if (classes.length === 0) {
     return (
       <>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-gray-900 mb-4">No Classes Found</h1>
             <p className="text-gray-600 mb-4">Create your first class to get started.</p>
@@ -576,11 +627,12 @@ export default function AdminDashboard() {
     { id: 'students', label: 'Students', count: classStudents.length },
     { id: 'lessons', label: 'Lessons', count: classLessons.length },
     { id: 'submissions', label: 'Submissions', count: classSubmissions.length },
+    { id: 'attendance', label: 'Attendance', count: 0 }, // TODO: Implement attendance
     { id: 'messages', label: 'Messages', count: 0 }, // TODO: Implement messaging
   ];
 
   const renderOverview = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* Class Information */}
       <div className="bg-white p-6 rounded-lg shadow-md border">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Class Information</h2>
@@ -751,12 +803,15 @@ export default function AdminDashboard() {
             </p>
           </div>
         </div>
-        <div>
+        <div className="flex space-x-2">
+          <Button onClick={handleRosterImport} variant="outline">
+            Import Roster
+          </Button>
           <Button onClick={handleAddUser}>Add Student</Button>
         </div>
       </div>
-      
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+
+      <div className="bg-white rounded-lg shadow-md overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -771,10 +826,10 @@ export default function AdminDashboard() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredStudents.map((student) => {
               const studentSubmissions = classSubmissions.filter(s => s.student_id === student.id);
-              const avgGrade = studentSubmissions.filter(s => s.grade !== null).length > 0 
+              const avgGrade = studentSubmissions.filter(s => s.grade !== null).length > 0
                 ? Math.round(studentSubmissions.reduce((sum, s) => sum + (s.grade || 0), 0) / studentSubmissions.filter(s => s.grade !== null).length)
                 : null;
-              
+
               return (
                 <tr key={student.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
@@ -782,21 +837,12 @@ export default function AdminDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center space-x-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        student.is_active 
-                          ? 'bg-green-100 text-green-800' 
+                        student.is_active
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
                         {student.is_active ? 'Active' : 'Deactivated'}
                       </span>
-                      {student.is_active && (
-                        <button 
-                          type="button"
-                          onClick={() => handleDeactivateUser(student)}
-                          className="px-3 py-1 text-xs bg-red-50 text-red-600 border border-red-300 rounded hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                          Deactivate
-                        </button>
-                      )}
                       {!student.is_active && student.deactivated_at && (
                         <span className="text-xs text-gray-500">
                           {new Date(student.deactivated_at).toLocaleDateString()}
@@ -808,13 +854,48 @@ export default function AdminDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {avgGrade ? `${avgGrade}%` : 'N/A'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEditUser(student)}>
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="outline">View Profile</Button>
-                    </div>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => handleEditUser(student)}>
+                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Edit Student
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleInviteUser(student)} disabled={invitingUsers.has(student.id)}>
+                          {invitingUsers.has(student.id) ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Inviting...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              Send Invite
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        {student.is_active && (
+                          <DropdownMenuItem onClick={() => handleDeactivateUser(student)} className="text-red-600 focus:text-red-600">
+                            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728M6 6l12 12" />
+                            </svg>
+                            Deactivate
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               );
@@ -921,6 +1002,40 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderAttendance = () => {
+    return (
+      <div className="h-full">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-8 mb-8">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg mb-6">
+            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Smart Attendance Tracking</h3>
+          <p className="text-gray-700 mb-6 max-w-2xl leading-relaxed">
+            Upload Zoom participant CSV files and let our intelligent system automatically match students,
+            verify attendance, and generate beautiful reports. No more manual attendance taking!
+          </p>
+
+          <Button
+            onClick={() => router.push('/attendance')}
+            className="bg-blue-600 hover:bg-blue-700 px-8 py-6 text-lg font-medium"
+          >
+            Go to Attendance
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+
+          
+
+        </div>
+
+        {/* Big Call-to-Action Button */}
+      </div>
+    );
+  };
+
   const renderMessages = () => {
     return (
       <div className="text-center py-12">
@@ -943,6 +1058,8 @@ export default function AdminDashboard() {
         return renderLessons();
       case 'submissions':
         return renderSubmissions();
+      case 'attendance':
+        return renderAttendance();
       case 'messages':
         return renderMessages();
       default:
@@ -951,58 +1068,8 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-brand-gradient shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <SimpleHeader subtitle="Admin Dashboard" />
-                          <div className="flex items-center space-x-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      className="h-auto p-2 text-white hover:bg-white/10 data-[state=open]:bg-white/10"
-                    >
-                      <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage src="" alt={user?.name || 'Admin'} />
-                        <AvatarFallback className="rounded-lg bg-white/20 text-white">
-                          {user?.name?.charAt(0) || 'A'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="grid flex-1 text-left text-sm leading-tight ml-3">
-                        <span className="truncate font-medium text-white">{user?.name || 'Admin User'}</span>
-                        <span className="text-[#d2ac47] truncate text-xs">
-                          {user?.email || 'admin@example.com'}
-                        </span>
-                      </div>
-                      <MoreVertical className="ml-auto h-4 w-4 text-white" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => {}}>
-                      <UserIcon className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {}}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <div>
               <h2 className="text-3xl font-bold text-gray-900">Admin Dashboard</h2>
@@ -1154,11 +1221,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-lg shadow-md border p-6">
             {renderContent()}
           </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <SimpleFooter />
+      </div>
 
       {/* User Form Dialog */}
       <UserFormDialog
@@ -1191,6 +1254,16 @@ export default function AdminDashboard() {
         onSubmit={handleLessonSubmit}
         mode={lessonDialogMode}
         isSubmitting={isSubmittingLesson}
+      />
+
+      {/* Roster Import Dialog */}
+      <RosterImportDialog
+        open={rosterImportOpen}
+        onOpenChange={setRosterImportOpen}
+        classId={selectedClassId}
+        className={selectedClass?.name || 'Unknown Class'}
+        onImportComplete={handleRosterImportComplete}
+        isImporting={isImportingRoster}
       />
 
       {/* Deactivation Warning Dialog */}
@@ -1256,6 +1329,6 @@ export default function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

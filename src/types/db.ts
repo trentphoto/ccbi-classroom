@@ -111,7 +111,7 @@ export interface AttendanceRecord {
   id: string; // UUID
   meeting_id: string; // UUID
   student_id: string; // UUID
-  status: 'present' | 'absent' | 'late' | 'excused';
+  status: 'present' | 'absent';
   notes: string | null;
   verified_by: string | null; // UUID of admin who verified
   created_at: Date; // Required timestamp

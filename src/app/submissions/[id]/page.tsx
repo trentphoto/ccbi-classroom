@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import SimpleHeader from '@/components/SimpleHeader';
-import SimpleFooter from '@/components/SimpleFooter';
 import { db } from '@/lib/supabase/database';
 import { Submission, User, Lesson } from '@/types/db';
 import { ArrowLeft, FileText, Download, Star, MessageSquare } from 'lucide-react';
@@ -98,38 +96,30 @@ export default function SubmissionReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <SimpleHeader />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading submission...</p>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading submission...</p>
           </div>
         </div>
-        <SimpleFooter />
       </div>
     );
   }
 
   if (error || !submission || !student || !lesson) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <SimpleHeader />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">Submission Not Found</h1>
-              <p className="text-gray-600 mb-6">{error || 'The requested submission could not be found.'}</p>
-              <Button onClick={() => router.back()}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Go Back
-              </Button>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Submission Not Found</h1>
+            <p className="text-gray-600 mb-6">{error || 'The requested submission could not be found.'}</p>
+            <Button onClick={() => router.back()}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go Back
+            </Button>
           </div>
         </div>
-        <SimpleFooter />
       </div>
     );
   }
@@ -137,12 +127,7 @@ export default function SubmissionReviewPage() {
   const isGraded = submission.grade !== null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SimpleHeader />
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
+        <div className="container mx-auto px-4 py-8">
           <div className="mb-6">
             <Button 
               variant="outline" 
@@ -357,9 +342,5 @@ export default function SubmissionReviewPage() {
             </div>
           </div>
         </div>
-      </div>
-      
-      <SimpleFooter />
-    </div>
   );
 }

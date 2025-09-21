@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import SimpleHeader from '@/components/SimpleHeader';
-import SimpleFooter from '@/components/SimpleFooter';
 import { db } from '@/lib/supabase/database';
 import { Submission, User, Lesson, Class } from '@/types/db';
 import { 
@@ -123,46 +121,33 @@ export default function SubmissionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <SimpleHeader />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading submissions...</p>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading submissions...</p>
           </div>
         </div>
-        <SimpleFooter />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <SimpleHeader />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Submissions</h1>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <Button onClick={loadData}>Retry</Button>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Submissions</h1>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <Button onClick={loadData}>Retry</Button>
           </div>
         </div>
-        <SimpleFooter />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SimpleHeader />
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
+        <div className="container mx-auto px-4 py-8">
           <div className="mb-6">
             <Button 
               variant="outline" 
@@ -364,9 +349,5 @@ export default function SubmissionsPage() {
             )}
           </div>
         </div>
-      </div>
-      
-      <SimpleFooter />
-    </div>
   );
 }

@@ -5,8 +5,8 @@ import { CURRENT_BRAND } from '@/lib/brand';
 
 export default function SimpleFooter() {
   return (
-    <footer className="bg-brand-gradient border-t mt-auto">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <footer className="bg-brand-gradient border-t">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
           <div className="flex items-center space-x-3">
             <div className="bg-white rounded-full aspect-square w-24 h-24 flex items-center justify-center p-2">

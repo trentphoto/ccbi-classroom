@@ -6,16 +6,9 @@ import { User, Class, Lesson, Submission, ClassEnrollment, UserRole } from '@/ty
 import Image from 'next/image';
 import { db } from '@/lib/supabase/database';
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
-import SimpleHeader from './SimpleHeader';
-import SimpleFooter from './SimpleFooter';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { MoreVertical, LogOut, User as UserIcon, Settings } from 'lucide-react';
 
 export default function StudentDashboard() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
   
   // State for data
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -122,19 +115,11 @@ export default function StudentDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push('/login');
-    } catch (err) {
-      console.error('Error logging out:', err);
-    }
-  };
 
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
@@ -146,7 +131,7 @@ export default function StudentDashboard() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <Button onClick={loadStudentData}>Retry</Button>
@@ -158,7 +143,7 @@ export default function StudentDashboard() {
   // Show empty state if no data
   if (!currentUser || !enrolledClass) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-gray-900 mb-4">No Class Found</h1>
           <p className="text-gray-600 mb-4">You are not enrolled in any class.</p>
@@ -172,57 +157,6 @@ export default function StudentDashboard() {
   const currentSubmission = submissions.find(sub => sub.lesson_id === currentLesson?.id) || null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-brand-gradient shadow-lg">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <SimpleHeader subtitle={`Welcome back, ${currentUser?.name || 'Student'}`} />
-            <div className="flex items-center space-x-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    className="h-auto p-2 text-white hover:bg-white/10 data-[state=open]:bg-white/10"
-                  >
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src="" alt={currentUser.name} />
-                      <AvatarFallback className="rounded-lg bg-white/20 text-white">
-                        {currentUser.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight ml-3">
-                      <span className="truncate font-medium text-white">{currentUser.name}</span>
-                      <span className="text-[#d2ac47] truncate text-xs">
-                        {currentUser.email}
-                      </span>
-                    </div>
-                    <MoreVertical className="ml-auto h-4 w-4 text-white" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => {}}>
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {}}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Class Info */}
           <div className="mb-8">
@@ -378,10 +312,5 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
-      </main>
-
-      {/* Footer */}
-      <SimpleFooter />
-    </div>
   );
 }
