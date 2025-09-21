@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { User, Conversation, ConversationWithMessages, UserRole } from '@/types/db';
+import { User, ConversationWithMessages } from '@/types/db';
 import ChatInterface from './ChatInterface';
 
 interface MessagingInterfaceProps {

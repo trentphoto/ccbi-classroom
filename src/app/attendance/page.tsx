@@ -143,7 +143,7 @@ export default function AttendancePage() {
   const classMeetings = meetings.filter(meeting => meeting.class_id === selectedClassId);
   
   // Get students enrolled in the selected class
-  const classStudents = students; // Students are already filtered by class in loadData
+  // const classStudents = students; // Students are already filtered by class in loadData - unused for now
 
   // Handle class selection change
   const handleClassChange = async (newClassId: string) => {

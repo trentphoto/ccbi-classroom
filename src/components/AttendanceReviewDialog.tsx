@@ -11,7 +11,7 @@ import {
 } from './ui/dialog';
 import { Button } from './ui/button';
 import { User } from '@/types/db';
-import { ParticipantMatch, getMatchingSummary, filterParticipantsByMatch } from '@/lib/csv-parser';
+import { ParticipantMatch } from '@/lib/csv-parser';
 import { MatchingSuggestion, processParticipantMatches, getMatchingStats, FuzzyMatch } from '@/lib/fuzzy-matching';
 
 interface AttendanceReviewDialogProps {
@@ -21,7 +21,7 @@ interface AttendanceReviewDialogProps {
   students: User[];
   meetingId: string;
   meetingTitle: string;
-  onSaveAttendance: (attendanceData: any[]) => void;
+  onSaveAttendance: (attendanceData: { meeting_id: string; student_id: string; status: string; notes: string | null; verified_by: string | null }[]) => void;
   isSaving?: boolean;
 }
 
@@ -79,7 +79,7 @@ export default function AttendanceReviewDialog({
     }
   }, [open, matches, fuzzyMatches]);
 
-  const getParticipantKey = (participant: any) => {
+  const getParticipantKey = (participant: { email?: string; name?: string }) => {
     return participant.email || participant.name || `participant_${participant.name}`;
   };
 
@@ -101,7 +101,7 @@ export default function AttendanceReviewDialog({
 
   const handleSave = () => {
     try {
-      const attendanceData: any[] = [];
+      const attendanceData: { meeting_id: string; student_id: string; status: string; notes: string | null; verified_by: string | null }[] = [];
       
       // Process both original matches and fuzzy matches
       fuzzyMatches.forEach(suggestion => {
@@ -357,7 +357,7 @@ export default function AttendanceReviewDialog({
             ].map(({ key, label, count }) => (
               <button
                 key={key}
-                onClick={() => setFilter(key as any)}
+                onClick={() => setFilter(key as 'all' | 'matched' | 'unmatched')}
                 className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   filter === key
                     ? 'bg-white text-gray-900 shadow-sm'

@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { ZoomParticipant, ParticipantMatch, CSVParsingResult } from '@/lib/csv-parser';
+import { ParticipantMatch, CSVParsingResult } from '@/lib/csv-parser';
 import { validateCSVFile, formatFileSize } from '@/lib/csv-upload';
 import { User } from '@/types/db';
 
@@ -27,7 +27,7 @@ interface CSVUploadDialogProps {
 export default function CSVUploadDialog({
   open,
   onOpenChange,
-  meetingId,
+  // meetingId, // Unused for now
   meetingTitle,
   students,
   onUploadComplete,
@@ -258,7 +258,7 @@ export default function CSVUploadDialog({
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">Next Steps</h4>
                 <p className="text-sm text-gray-600">
-                  The CSV has been parsed successfully. Click "Continue to Matching" to match participants 
+                  The CSV has been parsed successfully. Click &quot;Continue to Matching&quot; to match participants 
                   with enrolled students and review attendance records.
                 </p>
               </div>

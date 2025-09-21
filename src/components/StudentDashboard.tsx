@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { User, Class, Lesson, Submission, ClassEnrollment, UserRole } from '@/types/db';
-import Image from 'next/image';
+import { User, Class, Lesson, Submission, UserRole } from '@/types/db';
+// import Image from 'next/image'; // Unused for now
 import { db } from '@/lib/supabase/database';
-import { useAuth } from '@/lib/auth-context';
+// import { useAuth } from '@/lib/auth-context'; // Unused for now
 
 export default function StudentDashboard() {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Unused for now
   
   // State for data
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -17,7 +17,7 @@ export default function StudentDashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   
   // State for UI
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  // const [isVideoPlaying, setIsVideoPlaying] = useState(false); // Unused for now
   const [submissionFile, setSubmissionFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   

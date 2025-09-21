@@ -1,0 +1,141 @@
+# Cursor Rules for Classroom Management System
+
+## TypeScript & Code Quality Rules
+
+### 1. TypeScript Best Practices
+- **NEVER use `any` type** - Always use specific types or proper type assertions
+- Use `unknown` first when type casting: `(data as unknown as SpecificType)`
+- Add proper type guards for runtime type checking
+- Use `Record<string, string | number>` for CSV row data instead of `any`
+- Always define proper interfaces for function parameters and return types
+
+### 2. React Hook Dependencies
+- **ALWAYS wrap functions used in useEffect with `useCallback`**
+- Place `useCallback` functions BEFORE the `useEffect` that uses them
+- Include all dependencies in the dependency array
+- Use proper dependency arrays: `[dependency1, dependency2, callbackFunction]`
+
+### 3. Import Management
+- Remove unused imports immediately
+- Use specific imports instead of wildcard imports when possible
+- Comment out unused imports with `// Unused for now` if they might be needed later
+- Group imports logically: React, Next.js, third-party, local components, types
+
+### 4. Variable Usage
+- Remove or use all declared variables
+- Prefix unused parameters with `_` (e.g., `_rowNumber`)
+- Comment out unused variables with explanation if they might be needed later
+- Use descriptive variable names that indicate their purpose
+
+### 5. JSX & HTML Entities
+- **NEVER use unescaped quotes in JSX** - Use `&quot;` instead of `"`
+- Use proper HTML entities for special characters
+- Validate all user-facing text for proper escaping
+
+### 6. Error Handling
+- Always provide proper error types instead of `any`
+- Use type guards for runtime validation
+- Handle edge cases in CSV parsing and data processing
+- Add proper null/undefined checks
+
+### 7. Function Organization
+- Place helper functions before the main component logic
+- Use `useCallback` for functions passed to child components
+- Keep functions focused and single-purpose
+- Add proper JSDoc comments for complex functions
+
+### 8. Build & Linting
+- Run `npm run build` frequently during development
+- Fix TypeScript errors immediately, don't let them accumulate
+- Address ESLint warnings proactively
+- Use proper type assertions instead of suppressing errors
+
+### 9. Database & API Types
+- Define proper return types for database operations
+- Use type assertions carefully with Supabase queries
+- Handle unknown data types with proper type guards
+- Validate data structure before processing
+
+### 10. Component Structure
+- Keep components focused and single-purpose
+- Use proper prop types and interfaces
+- Handle loading and error states properly
+- Use consistent naming conventions
+
+## File-Specific Guidelines
+
+### CSV Processing Files
+- Always validate row data types before processing
+- Use proper type guards for string operations
+- Handle missing or malformed data gracefully
+- Add comprehensive error handling
+
+### Database Files
+- Use proper type assertions for Supabase responses
+- Handle query timeouts and errors
+- Validate data before returning
+- Use consistent error messages
+
+### Component Files
+- Remove unused imports and variables
+- Use proper React patterns (hooks, callbacks)
+- Handle all edge cases in UI components
+- Use consistent styling and structure
+
+## Development Workflow
+
+1. **Before committing**: Run `npm run build` to ensure no errors
+2. **During development**: Fix TypeScript errors immediately
+3. **Code review**: Check for unused imports/variables
+4. **Testing**: Verify all components render without errors
+5. **Documentation**: Update comments when changing complex logic
+
+## Common Patterns to Avoid
+
+❌ **Don't do this:**
+```typescript
+// Using any type
+const data: any = await fetchData();
+
+// Unused variables
+const unusedVar = 'something';
+
+// Missing useCallback
+useEffect(() => {
+  loadData();
+}, [loadData]); // loadData not wrapped in useCallback
+
+// Unescaped quotes in JSX
+<p>Click "Continue" to proceed</p>
+```
+
+✅ **Do this instead:**
+```typescript
+// Proper typing
+const data: SpecificType = await fetchData();
+
+// Remove or use variables
+// const unusedVar = 'something'; // Unused for now
+
+// Proper useCallback
+const loadData = useCallback(async () => {
+  // implementation
+}, [dependency]);
+
+useEffect(() => {
+  loadData();
+}, [loadData]);
+
+// Proper HTML entities
+<p>Click &quot;Continue&quot; to proceed</p>
+```
+
+## Quick Fixes for Common Issues
+
+- **TypeScript errors**: Add proper types, use type guards
+- **React Hook warnings**: Wrap functions in useCallback
+- **Unused variables**: Remove or comment with explanation
+- **Build failures**: Fix TypeScript errors first, then warnings
+- **Import issues**: Remove unused imports, use specific imports
+
+Remember: **Build success is the minimum requirement**. All TypeScript errors must be resolved before considering the task complete.

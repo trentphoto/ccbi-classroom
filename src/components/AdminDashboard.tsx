@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { db } from '@/lib/supabase/database';
-import { useAuth } from '@/lib/auth-context';
+// import { useAuth } from '@/lib/auth-context'; // Unused for now
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { MoreVertical, ArrowRight } from 'lucide-react';
@@ -25,7 +25,7 @@ import RosterImportDialog from './RosterImportDialog';
 type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'attendance' | 'messages';
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Unused for now
   const router = useRouter();
   
   // State for data
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
   const [classDialogOpen, setClassDialogOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [classDialogMode, setClassDialogMode] = useState<'create' | 'edit'>('create');
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  // const [selectedConversation, setSelectedConversation] = useState<string | null>(null); // Unused for now
   const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
   const [isSubmittingClass, setIsSubmittingClass] = useState(false);
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
@@ -339,20 +339,20 @@ export default function AdminDashboard() {
     }
   };
 
-  // Handle user delete
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
-    try {
-      await db.deleteEnrollment(userId); // Delete enrollment first
-      // Note: We can't delete the user from auth.users via RLS, so we'll just remove from our state
-      setUsers(prev => prev.filter(user => user.id !== userId));
-      setEnrollments(prev => prev.filter(enrollment => enrollment.user_id !== userId));
-    } catch (err) {
-      console.error('Error deleting user:', err);
-      setError('Failed to delete user. Please try again.');
-    }
-  };
+  // Handle user delete - unused for now
+  // const handleDeleteUser = async (userId: string) => {
+  //   if (!confirm('Are you sure you want to delete this user?')) return;
+  //   
+  //   try {
+  //     await db.deleteEnrollment(userId); // Delete enrollment first
+  //     // Note: We can't delete the user from auth.users via RLS, so we'll just remove from our state
+  //     setUsers(prev => prev.filter(user => user.id !== userId));
+  //     setEnrollments(prev => prev.filter(enrollment => enrollment.user_id !== userId));
+  //   } catch (err) {
+  //     console.error('Error deleting user:', err);
+  //     setError('Failed to delete user. Please try again.');
+  //   }
+  // };
 
 
 

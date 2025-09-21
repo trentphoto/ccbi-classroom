@@ -29,7 +29,7 @@ export default function UserFormDialog({
   open,
   onOpenChange,
   user,
-  selectedClassId,
+  // selectedClassId, // Unused for now
   onSubmit,
   mode,
   isSubmitting = false,

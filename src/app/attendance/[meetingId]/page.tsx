@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import MeetingFormDialog from '@/components/MeetingFormDialog';
 import CSVUploadDialog from '@/components/CSVUploadDialog';
 import { Class, ClassMeeting, AttendanceRecord, User } from '@/types/db';
-import { ParticipantMatch, getMatchingSummary, filterParticipantsByMatch } from '@/lib/csv-parser';
+import { ParticipantMatch, getMatchingSummary } from '@/lib/csv-parser';
 import { db } from '@/lib/supabase/database';
 import { toast } from 'sonner';
 
@@ -36,24 +36,7 @@ export default function MeetingPage() {
   const [selectedStudents, setSelectedStudents] = useState<Map<string, string>>(new Map());
   const [dragActive, setDragActive] = useState(false);
 
-  // Load data on component mount
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      
-      if (user.role !== 'admin') {
-        router.push('/dashboard');
-        return;
-      }
-      
-      loadMeetingData();
-    }
-  }, [user, authLoading, router, meetingId]);
-
-  const loadMeetingData = async () => {
+  const loadMeetingData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -96,7 +79,24 @@ export default function MeetingPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [meetingId]);
+
+  // Load data on component mount
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      
+      if (user.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      }
+      
+      loadMeetingData();
+    }
+  }, [user, authLoading, router, meetingId, loadMeetingData]);
 
   // Handle meeting form submission
   const handleMeetingSubmit = async (meetingData: Omit<ClassMeeting, 'id' | 'created_at'>) => {
@@ -212,7 +212,7 @@ export default function MeetingPage() {
   };
 
   // Create unique participant identifier
-  const getParticipantKey = (participant: any) => {
+  const getParticipantKey = (participant: { email?: string; name?: string }) => {
     // Use email if available, otherwise use name, otherwise use a combination
     if (participant.email) {
       return participant.email;
@@ -333,12 +333,12 @@ export default function MeetingPage() {
     return students.filter(student => !assignedStudentIds.has(student.id));
   };
   
-  const getFilteredFuzzyMatches = (fuzzyMatches: any[]) => {
-    return fuzzyMatches.filter((fuzzyMatch: any) => !assignedStudentIds.has(fuzzyMatch.student.id));
+  const getFilteredFuzzyMatches = (fuzzyMatches: { student: { id: string; name: string; email: string }; score: number; reasons: string[] }[]) => {
+    return fuzzyMatches.filter((fuzzyMatch) => !assignedStudentIds.has(fuzzyMatch.student.id));
   };
   
-  const getFilteredSuggestions = (suggestions: any[]) => {
-    return suggestions.filter((suggestion: any) => !assignedStudentIds.has(suggestion.id));
+  const getFilteredSuggestions = (suggestions: { id: string; name: string }[]) => {
+    return suggestions.filter((suggestion) => !assignedStudentIds.has(suggestion.id));
   };
   
   // Get absent students (students not assigned to any participant)
@@ -346,30 +346,30 @@ export default function MeetingPage() {
     return students.filter(student => !assignedStudentIds.has(student.id));
   };
   
-  // Get fuzzy match statistics
-  const getFuzzyMatchStats = () => {
-    const totalFuzzyMatches = csvMatches.reduce((count, match) => 
-      count + (match.fuzzyMatches?.length || 0), 0
-    );
-    const highConfidenceFuzzy = csvMatches.reduce((count, match) => 
-      count + (match.fuzzyMatches?.filter(f => f.score >= 85).length || 0), 0
-    );
-    const mediumConfidenceFuzzy = csvMatches.reduce((count, match) => 
-      count + (match.fuzzyMatches?.filter(f => f.score >= 70 && f.score < 85).length || 0), 0
-    );
-    const lowConfidenceFuzzy = csvMatches.reduce((count, match) => 
-      count + (match.fuzzyMatches?.filter(f => f.score >= 50 && f.score < 70).length || 0), 0
-    );
-    
-    return {
-      totalFuzzyMatches,
-      highConfidenceFuzzy,
-      mediumConfidenceFuzzy,
-      lowConfidenceFuzzy
-    };
-  };
+  // Get fuzzy match statistics - unused for now
+  // const getFuzzyMatchStats = () => {
+  //   const totalFuzzyMatches = csvMatches.reduce((count, match) => 
+  //     count + (match.fuzzyMatches?.length || 0), 0
+  //   );
+  //   const highConfidenceFuzzy = csvMatches.reduce((count, match) => 
+  //     count + (match.fuzzyMatches?.filter(f => f.score >= 85).length || 0), 0
+  //   );
+  //   const mediumConfidenceFuzzy = csvMatches.reduce((count, match) => 
+  //     count + (match.fuzzyMatches?.filter(f => f.score >= 70 && f.score < 85).length || 0), 0
+  //   );
+  //   const lowConfidenceFuzzy = csvMatches.reduce((count, match) => 
+  //     count + (match.fuzzyMatches?.filter(f => f.score >= 50 && f.score < 70).length || 0), 0
+  //   );
+  //   
+  //   return {
+  //     totalFuzzyMatches,
+  //     highConfidenceFuzzy,
+  //     mediumConfidenceFuzzy,
+  //     lowConfidenceFuzzy
+  //   };
+  // };
   
-  const fuzzyStats = getFuzzyMatchStats();
+  // const fuzzyStats = getFuzzyMatchStats(); // Unused for now
 
   // Generate attendance report text
   const generateAttendanceReport = () => {
@@ -992,7 +992,7 @@ export default function MeetingPage() {
                                   {getFilteredFuzzyMatches(match.fuzzyMatches).slice(0, 3).map((fuzzyMatch, fuzzyIndex) => {
                                     const isHighConfidence = fuzzyMatch.score >= 85;
                                     const isMediumConfidence = fuzzyMatch.score >= 70 && fuzzyMatch.score < 85;
-                                    const isLowConfidence = fuzzyMatch.score >= 50 && fuzzyMatch.score < 70;
+                                    // const isLowConfidence = fuzzyMatch.score >= 50 && fuzzyMatch.score < 70; // Unused for now
                                     
                                     return (
                                       <div 

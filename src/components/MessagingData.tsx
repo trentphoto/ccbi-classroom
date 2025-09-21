@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { User, Conversation, ConversationWithMessages, Message, UserRole } from '@/types/db';
+import { Conversation, ConversationWithMessages, UserRole } from '@/types/db';
 import { getDefaultBrandId, getAdminEmail } from '@/lib/brand';
 
 // Sample messaging data for future use

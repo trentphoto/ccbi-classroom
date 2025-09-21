@@ -1,5 +1,5 @@
 import { createClient } from './client';
-import { Class, User, Lesson, Submission, ClassEnrollment, UserRole, ClassMeeting, AttendanceRecord } from '@/types/db';
+import { Class, User, Lesson, Submission, ClassEnrollment, ClassMeeting, AttendanceRecord } from '@/types/db';
 import { CURRENT_BRAND_ID } from '@/lib/brand';
 
 // Database service class for all Supabase operations
@@ -317,7 +317,7 @@ export class DatabaseService {
         setTimeout(() => reject(new Error('Database query timeout - check your connection and permissions')), 10000); // 10 second timeout
       });
 
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as { data: unknown; error: { message: string } | null };
 
       if (error) {
         throw new Error(`Failed to deactivate user: ${error.message}`);
@@ -327,7 +327,7 @@ export class DatabaseService {
         throw new Error('No data returned from deactivation');
       }
 
-      return data;
+      return data as User;
     } catch (error) {
       throw error;
     }
@@ -395,11 +395,11 @@ export class DatabaseService {
     }
 
     // Sort the results by user name after fetching
-    const sortedData = data?.sort((a: any, b: any) => 
+    const sortedData = (data as unknown as Array<{ users: User }>)?.sort((a, b) => 
       a.users.name.localeCompare(b.users.name)
     ) || [];
 
-    return sortedData.map((enrollment: any) => enrollment.users);
+    return sortedData.map((enrollment) => enrollment.users);
   }
 
   async createEnrollment(enrollmentData: Omit<ClassEnrollment, 'enrolled_at'>): Promise<ClassEnrollment> {

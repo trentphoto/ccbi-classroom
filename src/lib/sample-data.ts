@@ -1,5 +1,5 @@
 import { User, Class, Lesson, Submission, UserRole, ClassEnrollment, Conversation, Message } from '@/types/db';
-import { getDefaultBrandId, getSupportEmail, getAdminEmail } from './brand';
+import { getDefaultBrandId, getAdminEmail } from './brand';
 
 // Sample Users
 export const sampleUsers: User[] = [

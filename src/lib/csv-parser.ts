@@ -9,7 +9,7 @@ export interface ZoomParticipant {
   joinTime?: string;
   leaveTime?: string;
   duration?: string;
-  [key: string]: any; // Allow for additional fields
+  [key: string]: string | number | undefined; // Allow for additional fields
 }
 
 // Interface for matching results
@@ -72,7 +72,7 @@ export const parseZoomCSV = (file: File): Promise<CSVParsingResult> => {
         }
 
         // Process each row
-        results.data.forEach((row: any, index) => {
+        results.data.forEach((row: unknown, index) => {
           try {
             const participant = processParticipantRow(row, index + 1);
             if (participant) {
@@ -99,18 +99,25 @@ export const parseZoomCSV = (file: File): Promise<CSVParsingResult> => {
 /**
  * Process a single participant row from CSV
  */
-const processParticipantRow = (row: any, rowNumber: number): ZoomParticipant | null => {
+const processParticipantRow = (row: unknown, _rowNumber: number): ZoomParticipant | null => {
+  // Type guard to ensure row is an object
+  if (!row || typeof row !== 'object') {
+    return null;
+  }
+  
+  const rowData = row as Record<string, string | number>;
+  
   // Skip rows without essential data
-  if (!row.name && !row.email) {
+  if (!rowData.name && !rowData.email) {
     return null;
   }
 
   const participant: ZoomParticipant = {
-    name: (row.name || '').trim(),
-    email: (row.email || '').trim().toLowerCase(),
-    joinTime: row.joinTime?.trim(),
-    leaveTime: row.leaveTime?.trim(),
-    duration: row.duration?.trim()
+    name: (typeof rowData.name === 'string' ? rowData.name.trim() : ''),
+    email: (typeof rowData.email === 'string' ? rowData.email.trim().toLowerCase() : ''),
+    joinTime: (typeof rowData.joinTime === 'string' ? rowData.joinTime.trim() : undefined),
+    leaveTime: (typeof rowData.leaveTime === 'string' ? rowData.leaveTime.trim() : undefined),
+    duration: (typeof rowData.duration === 'string' ? rowData.duration.trim() : undefined)
   };
 
   // Clean up name field

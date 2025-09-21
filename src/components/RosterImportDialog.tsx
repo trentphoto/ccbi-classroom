@@ -24,7 +24,7 @@ interface RosterStudent {
   phone?: string;
   studentId?: string;
   grade?: string;
-  [key: string]: any;
+  [key: string]: string | number | undefined;
 }
 
 interface RosterImportResult {
@@ -144,7 +144,7 @@ export default function RosterImportDialog({
   classId,
   className,
   onImportComplete,
-  isImporting = false
+  // isImporting = false // Unused for now
 }: RosterImportDialogProps) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -233,7 +233,7 @@ export default function RosterImportDialog({
 
           // Normalize common roster CSV headers
           const normalized = header.toLowerCase().trim();
-          const originalHeader = header;
+          // const originalHeader = header; // Unused for now
 
           // Skip empty headers
           if (!normalized) {
@@ -344,7 +344,7 @@ export default function RosterImportDialog({
 
           // Process each row
           let skippedRows = 0;
-          results.data.forEach((row: any, index) => {
+          results.data.forEach((row: unknown, index) => {
             const student = processStudentRow(row, index + 1);
             if (student) {
               result.students.push(student);
@@ -374,23 +374,29 @@ export default function RosterImportDialog({
     );
   };
 
-  const processStudentRow = (row: any, rowNumber: number): RosterStudent | null => {
+  const processStudentRow = (row: unknown, _rowNumber: number): RosterStudent | null => {
+    // Type guard to ensure row is an object
+    if (!row || typeof row !== 'object') {
+      return null;
+    }
+    
+    const rowData = row as Record<string, string | number>;
     let name = '';
     let email = '';
 
     // Flexible name construction with multiple strategies
-    const buildFullName = (row: any): string => {
+    const buildFullName = (row: Record<string, string | number>): string => {
       // Strategy 1: Use direct full name if available
-      if (row.name && row.name.trim()) {
+      if (row.name && typeof row.name === 'string' && row.name.trim()) {
         return row.name.trim();
       }
 
       // Strategy 2: Combine first and last name
-      if (row.firstName && row.lastName) {
+      if (row.firstName && row.lastName && typeof row.firstName === 'string' && typeof row.lastName === 'string') {
         let fullName = `${row.firstName.trim()} ${row.lastName.trim()}`;
 
         // Add middle name/initial if available
-        if (row.middleName && row.middleName.trim()) {
+        if (row.middleName && typeof row.middleName === 'string' && row.middleName.trim()) {
           // Insert middle name between first and last
           const middle = row.middleName.trim();
           // If middle name is just an initial (1-2 characters), format differently
@@ -405,12 +411,12 @@ export default function RosterImportDialog({
       }
 
       // Strategy 3: Use first name only (less ideal but better than nothing)
-      if (row.firstName && row.firstName.trim()) {
+      if (row.firstName && typeof row.firstName === 'string' && row.firstName.trim()) {
         return row.firstName.trim();
       }
 
       // Strategy 4: Use last name only (least preferred)
-      if (row.lastName && row.lastName.trim()) {
+      if (row.lastName && typeof row.lastName === 'string' && row.lastName.trim()) {
         return row.lastName.trim();
       }
 
@@ -418,11 +424,11 @@ export default function RosterImportDialog({
     };
 
     // Build the full name using the flexible strategy
-    name = buildFullName(row);
+    name = buildFullName(rowData);
 
     // Handle email with multiple variations
-    if (row.email) {
-      email = row.email.trim().toLowerCase();
+    if (rowData.email && typeof rowData.email === 'string') {
+      email = rowData.email.trim().toLowerCase();
     }
 
     // Skip rows without essential data - be more lenient about blank rows
@@ -449,13 +455,13 @@ export default function RosterImportDialog({
     return {
       name: name.trim(),
       email: email.trim(),
-      firstName: row.firstName?.trim() || '',
-      lastName: row.lastName?.trim() || '',
-      middleName: row.middleName?.trim() || '',
-      phone: row.phone?.trim() || '',
-      studentId: row.studentId?.trim() || '',
-      grade: row.grade?.trim() || '',
-      ...row // Keep any additional fields
+      firstName: (typeof rowData.firstName === 'string' ? rowData.firstName.trim() : '') || '',
+      lastName: (typeof rowData.lastName === 'string' ? rowData.lastName.trim() : '') || '',
+      middleName: (typeof rowData.middleName === 'string' ? rowData.middleName.trim() : '') || '',
+      phone: (typeof rowData.phone === 'string' ? rowData.phone.trim() : '') || '',
+      studentId: (typeof rowData.studentId === 'string' ? rowData.studentId.trim() : '') || '',
+      grade: (typeof rowData.grade === 'string' ? rowData.grade.trim() : '') || '',
+      ...rowData // Keep any additional fields
     };
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,11 +24,7 @@ export default function SubmissionReviewPage() {
   const [grade, setGrade] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string>('');
 
-  useEffect(() => {
-    loadSubmissionData();
-  }, [submissionId]);
-
-  const loadSubmissionData = async () => {
+  const loadSubmissionData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -62,7 +58,11 @@ export default function SubmissionReviewPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [submissionId]);
+
+  useEffect(() => {
+    loadSubmissionData();
+  }, [submissionId, loadSubmissionData]);
 
   const handleSaveGrade = async () => {
     if (!submission || grade === null || grade < 0 || grade > 100) {

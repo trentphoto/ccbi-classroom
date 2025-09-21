@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { User, UserRole, Class, Lesson, Submission } from '@/types/db';
+import { User, UserRole, Lesson, Submission } from '@/types/db';
 import { getDefaultBrandId, getAdminEmail } from '@/lib/brand';
 import MessagingInterface from '@/components/MessagingInterface';
 import { sampleConversations } from '@/components/MessagingData';
@@ -26,15 +26,15 @@ export default function ComponentsDemoPage() {
     created_at: new Date('2024-01-15')
   };
 
-  const sampleClass: Class = {
-    id: 'class1',
-    name: 'April 2025 MTh MDiv',
-    description: 'Master of Divinity Program - Monday/Thursday Schedule',
-    brand_id: getDefaultBrandId(),
-    is_active: true,
-    created_at: new Date('2024-01-15'),
-    updated_at: new Date('2024-01-15')
-  };
+  // const sampleClass: Class = { // Unused for now
+  //   id: 'class1',
+  //   name: 'April 2025 MTh MDiv',
+  //   description: 'Master of Divinity Program - Monday/Thursday Schedule',
+  //   brand_id: getDefaultBrandId(),
+  //   is_active: true,
+  //   created_at: new Date('2024-01-15'),
+  //   updated_at: new Date('2024-01-15')
+  // };
 
   const sampleLesson: Lesson = {
     id: 'lesson1',
@@ -96,7 +96,7 @@ export default function ComponentsDemoPage() {
     }
   ];
 
-  const handleSubmit = async (file: File) => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     // Simulate submission
     setTimeout(() => {
