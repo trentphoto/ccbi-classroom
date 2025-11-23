@@ -21,6 +21,7 @@ interface ClassFormDialogProps {
   onSubmit: (classData: Omit<Class, 'id' | 'created_at' | 'updated_at'>) => void;
   mode: 'create' | 'edit';
   isSubmitting?: boolean;
+  error?: string | null;
 }
 
 export default function ClassFormDialog({
@@ -29,7 +30,8 @@ export default function ClassFormDialog({
   classData,
   onSubmit,
   mode,
-  isSubmitting = false
+  isSubmitting = false,
+  error = null
 }: ClassFormDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -54,6 +56,17 @@ export default function ClassFormDialog({
     }
     setErrors({});
   }, [classData, mode, open]);
+  
+  // Clear errors when error prop changes to null (error cleared by parent)
+  useEffect(() => {
+    if (!error) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.general;
+        return newErrors;
+      });
+    }
+  }, [error]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -175,6 +188,12 @@ export default function ClassFormDialog({
               Active Class
             </label>
           </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button

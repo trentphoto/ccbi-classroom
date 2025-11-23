@@ -52,6 +52,7 @@ export default function AdminDashboard() {
   const [deactivationDialogOpen, setDeactivationDialogOpen] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
   const [userFormError, setUserFormError] = useState<string | null>(null);
+  const [classFormError, setClassFormError] = useState<string | null>(null);
   const [showActiveStudents, setShowActiveStudents] = useState<boolean>(true);
   const [invitingUsers, setInvitingUsers] = useState<Set<string>>(new Set());
   
@@ -363,6 +364,7 @@ export default function AdminDashboard() {
 
     try {
       setIsSubmittingClass(true);
+      setClassFormError(null); // Clear any previous errors
 
       // Add timeout to prevent infinite loading
       const timeoutPromise = new Promise((_, reject) => {
@@ -393,10 +395,11 @@ export default function AdminDashboard() {
         toast.success(`Class "${updatedClass.name}" updated successfully!`);
       }
 
-      // Close dialog and reset state
+      // Close dialog and reset state only on success
       setClassDialogOpen(false);
       setEditingClass(null);
       setClassDialogMode('create');
+      setClassFormError(null);
     } catch (err) {
       console.error('Error saving class:', err);
       let errorMessage = 'An unexpected error occurred. Please try again.';
@@ -413,8 +416,9 @@ export default function AdminDashboard() {
         }
       }
       
-      setError(errorMessage);
-      toast.error(errorMessage);
+      // Set error in form instead of showing toast and closing dialog
+      setClassFormError(errorMessage);
+      // Don't close dialog - keep it open so user can retry
     } finally {
       setIsSubmittingClass(false);
     }
@@ -424,6 +428,7 @@ export default function AdminDashboard() {
   const handleCreateClass = () => {
     setClassDialogMode('create');
     setEditingClass(null);
+    setClassFormError(null); // Clear any previous errors
     setClassDialogOpen(true);
   };
 
@@ -434,6 +439,7 @@ export default function AdminDashboard() {
     }
     setClassDialogMode('edit');
     setEditingClass(classData);
+    setClassFormError(null); // Clear any previous errors
     setClassDialogOpen(true);
   };
 
@@ -1238,11 +1244,18 @@ export default function AdminDashboard() {
       {/* Class Form Dialog */}
       <ClassFormDialog
         open={classDialogOpen}
-        onOpenChange={setClassDialogOpen}
+        onOpenChange={(open) => {
+          setClassDialogOpen(open);
+          if (!open) {
+            // Clear error when dialog is closed
+            setClassFormError(null);
+          }
+        }}
         classData={editingClass}
         onSubmit={handleClassSubmit}
         mode={classDialogMode}
         isSubmitting={isSubmittingClass}
+        error={classFormError}
       />
 
       {/* Lesson Form Dialog */}
