@@ -98,6 +98,52 @@ const BRAND_CONFIGS = {
       grading: true,
       progressTracking: true,
     }
+  },
+  nbi: {
+    // Basic Info
+    name: 'NBI Classroom',
+    slug: 'nbi',
+    fullName: 'National Bible Institute',
+    description: 'The Nationally Accredited Bible Institute',
+    
+    // Visual Identity
+    logoUrl: '/logos/nbi.svg',
+    logoWhiteUrl: '/logos/nbi-white.svg',
+    favicon: '/favicon.ico',
+    
+    // Colors
+    primaryColor: '#000000',
+    secondaryColor: '#666666',
+    accentColor: '#999999',
+    backgroundColor: '#f8fafc',
+    textColor: '#1f2937',
+    
+    // Branding
+    tagline: 'The Nationally Accredited Bible Institute',
+    mission: 'To provide quality education and training.',
+    
+    // Contact & Support
+    supportEmail: 'admin@nationalbibleinst.org',
+    adminEmail: 'admin@nationalbibleinst.org',
+    website: 'https://nationalbibleinst.org',
+    
+    // Deployment
+    domain: 'nationalbibleinst.org',
+    
+    // Default Settings
+    defaultUserRole: 'student',
+    allowSelfRegistration: true,
+    maxFileUploadSize: 10, // MB
+    allowedFileTypes: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'],
+    
+    // Features
+    features: {
+      messaging: true,
+      videoLessons: true,
+      fileSubmissions: true,
+      grading: true,
+      progressTracking: true,
+    }
   }
 } as const;
 
@@ -124,6 +170,7 @@ export const getBrandConfig = () => BRAND_CONFIG;
 export const getBrandId = () => BRAND_ID;
 export const isCCBI = () => BRAND_ID === 'ccbi';
 export const isZTS = () => BRAND_ID === 'zts';
+export const isNBI = () => BRAND_ID === 'nbi';
 
 // Brand-specific default values
 export const getDefaultBrandId = () => BRAND_CONFIG.slug;

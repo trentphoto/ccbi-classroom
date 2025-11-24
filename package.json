@@ -9,8 +9,10 @@
     "lint": "eslint",
     "build:ccbi": "NEXT_PUBLIC_BRAND_ID=ccbi npm run build",
     "build:zts": "NEXT_PUBLIC_BRAND_ID=zts npm run build",
+    "build:nbi": "NEXT_PUBLIC_BRAND_ID=nbi npm run build",
     "dev:ccbi": "NEXT_PUBLIC_BRAND_ID=ccbi npm run dev",
-    "dev:zts": "NEXT_PUBLIC_BRAND_ID=zts npm run dev"
+    "dev:zts": "NEXT_PUBLIC_BRAND_ID=zts npm run dev",
+    "dev:nbi": "NEXT_PUBLIC_BRAND_ID=nbi npm run dev"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",

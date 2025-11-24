@@ -5,13 +5,35 @@ export enum UserRole {
   }
 
 // Define brand types
-export type BrandId = 'ccbi' | 'zts';
+export type BrandId = 'ccbi' | 'zts' | 'nbi';
 
 // Define enum for brand types (for backward compatibility)
 export enum BrandType {
     CCBI = 'ccbi',
     ZTS = 'zts',
+    NBI = 'nbi',
   }
+
+// Type for Brand entity - matches Supabase brands table
+export interface Brand {
+  id: string; // Brand identifier ('ccbi', 'zts', 'nbi')
+  name: string; // Display name (e.g., 'CCBI Classroom')
+  full_name: string | null; // Full organization name
+  description: string | null; // Brand description/tagline
+  slug: string; // URL-friendly slug
+  logo_url: string | null; // Path to logo
+  logo_white_url: string | null; // Path to white logo variant
+  primary_color: string | null; // Primary brand color
+  secondary_color: string | null; // Secondary brand color
+  accent_color: string | null; // Accent brand color
+  support_email: string | null; // Support email address
+  admin_email: string | null; // Admin email address
+  website: string | null; // Brand website URL
+  domain: string | null; // Deployment domain
+  is_active: boolean; // Whether the brand is active
+  created_at: Date; // Created timestamp
+  updated_at: Date; // Updated timestamp
+}
   
   // Type for User entity - matches Supabase users table
   export interface User {
@@ -19,7 +41,7 @@ export enum BrandType {
     email: string;
     role: UserRole;
     name: string;
-    brand_id: string; // Brand identifier ('ccbi' or 'zts')
+    brand_id: string; // Brand identifier (references brands.id)
     is_active: boolean; // Whether the user is active or inactive
     deactivated_at: Date | null; // Timestamp when user was permanently deactivated
     created_at: Date; // Required timestamp
@@ -30,7 +52,7 @@ export enum BrandType {
     id: string; // UUID
     name: string;
     description: string;
-    brand_id: BrandId; // Brand identifier ('ccbi' or 'zts')
+    brand_id: BrandId; // Brand identifier (references brands.id)
     is_active: boolean;
     created_at: Date; // Required timestamp
     updated_at: Date; // Required timestamp
