@@ -1108,7 +1108,7 @@ export default function AdminDashboard() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsClassDropdownOpen(!isClassDropdownOpen)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-left bg-white border-2 border-gray-200 rounded-lg shadow-sm hover:border-[#072c68]/50 hover:shadow-md hover:scale-[1.003] active:scale-[0.997] transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#072c68]/20 focus:border-[#072c68]"
+                  className="w-full flex items-center justify-between px-4 py-3 text-left bg-white border-2 border-gray-200 rounded-lg shadow-sm hover:border-[#072c68]/50 hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#072c68]/20 focus:border-[#072c68]"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-gradient-to-br from-[#072c68]/10 to-[#086623]/10 rounded-lg">
@@ -1159,7 +1159,7 @@ export default function AdminDashboard() {
                           }
                           setIsClassDropdownOpen(false);
                         }}
-                                                 className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gradient-to-r hover:from-[#072c68]/5 hover:to-[#086623]/5 hover:scale-[1.007] transition-all duration-100 transform ${
+                                                 className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gradient-to-r hover:from-[#072c68]/5 hover:to-[#086623]/5 transition-all duration-100 ${
                            selectedClassId === cls.id ? 'bg-gradient-to-r from-[#072c68]/10 to-[#086623]/10 border-l-4 border-[#072c68]' : ''
                          }`}
                       >
