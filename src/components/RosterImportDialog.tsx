@@ -531,6 +531,7 @@ export default function RosterImportDialog({
 
     try {
       const importedUsers: User[] = [];
+      const skippedUsersList: Array<{ name: string; email: string; reason: string }> = [];
       const TIMEOUT_MS = 30000; // 30 second timeout per student
 
         // Create users and enrollments
@@ -552,7 +553,7 @@ export default function RosterImportDialog({
                 name: student.name,
                 role: UserRole.STUDENT,
                 brand_id: '', // Will be set by the database service
-                is_active: false, // Fixed: should be false initially
+                is_active: true, // Students are active by default when imported
                 deactivated_at: null
               }),
               TIMEOUT_MS,
@@ -573,33 +574,46 @@ export default function RosterImportDialog({
         } catch (userError) {
           const errorMessage = userError instanceof Error ? userError.message : 'Unknown error';
 
-          // Check if this is a duplicate constraint error
-          if (errorMessage.includes('duplicate key value violates unique constraint')) {
+          // Check if this is a duplicate email error or constraint violation
+          const isDuplicateError = 
+            errorMessage.includes('A user with this email already exists') ||
+            errorMessage.includes('duplicate key value violates unique constraint') ||
+            errorMessage.includes('duplicate') ||
+            errorMessage.includes('already exists');
+
+          if (isDuplicateError) {
             // Skip this user and continue with the import
-            let reason = 'Duplicate constraint violation';
+            let reason = 'Duplicate email address';
             if (errorMessage.includes('users_email_key')) {
               reason = 'Duplicate email address';
             } else if (errorMessage.includes('one_class_per_student')) {
               reason = 'Already enrolled in this class';
+            } else if (errorMessage.includes('A user with this email already exists')) {
+              reason = 'Email already exists';
             }
             
-            setSkippedUsers(prev => [...prev, {
+            skippedUsersList.push({
               name: student.name,
               email: student.email,
               reason: reason
-            }]);
+            });
             continue; // Continue to next student
           } else {
-            // For other errors, stop the import process
-            setError(`Import stopped: Failed to create user "${student.name}". ${errorMessage}`);
-            setIsProcessing(false);
-            setImportProgress({ current: 0, total: 0, currentUser: '' });
-            return; // Exit the function immediately
+            // For other errors, also skip but mark as error
+            skippedUsersList.push({
+              name: student.name,
+              email: student.email,
+              reason: `Error: ${errorMessage}`
+            });
+            continue; // Continue to next student instead of stopping
           }
         }
       }
 
-      onImportComplete(importedUsers, skippedUsers);
+      // Update state with skipped users for UI display
+      setSkippedUsers(skippedUsersList);
+      setError(null); // Clear any previous errors
+      onImportComplete(importedUsers, skippedUsersList);
       // Don't close the dialog - let user see the summary and close manually
       setImportedUsers(importedUsers);
       setImportCompleted(true);
