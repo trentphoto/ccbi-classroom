@@ -1,5 +1,5 @@
 import { createClient } from './client';
-import { Class, User, Lesson, Submission, ClassEnrollment, ClassMeeting, AttendanceRecord } from '@/types/db';
+import { Class, User, Lesson, Submission, ClassEnrollment, ClassMeeting, AttendanceRecord, Brand } from '@/types/db';
 import { CURRENT_BRAND_ID } from '@/lib/brand';
 
 // Database service class for all Supabase operations
@@ -41,28 +41,27 @@ export class DatabaseService {
 
   async createClass(classData: Omit<Class, 'id' | 'created_at' | 'updated_at'>): Promise<Class> {
     try {
-      const classDataWithBrand = {
-        ...classData,
-        brand_id: this.brandId
-      };
-      
-      const { data, error } = await this.supabase
-        .from('classes')
-        .insert([classDataWithBrand])
-        .select()
-        .single();
+      // Use RPC function to create class (bypasses RLS and validates brand_id)
+      const { data, error } = await this.supabase.rpc('create_class', {
+        class_name: classData.name,
+        class_description: classData.description,
+        class_brand_id: this.brandId,
+        class_is_active: classData.is_active ?? true
+      });
 
       if (error) {
         console.error('Error creating class:', error);
         throw new Error(`Failed to create class: ${error.message}`);
       }
 
-      if (!data) {
+      if (!data || (Array.isArray(data) && data.length === 0)) {
         console.error('No data returned from class creation');
         throw new Error('No data returned from class creation');
       }
 
-      return data;
+      // RPC returns an array, get the first element
+      const newClass = Array.isArray(data) ? data[0] : data;
+      return newClass as unknown as Class;
     } catch (error) {
       console.error('Exception in createClass:', error);
       throw error;
@@ -813,6 +812,37 @@ export class DatabaseService {
       console.error('Error deleting attendance record:', error);
       throw new Error('Failed to delete attendance record');
     }
+  }
+
+  // Brand operations (using RPC to bypass RLS)
+  async getBrands(): Promise<Brand[]> {
+    const { data, error } = await this.supabase.rpc('get_brands');
+
+    if (error) {
+      console.error('Error fetching brands:', error);
+      throw new Error('Failed to fetch brands');
+    }
+
+    return (data as unknown as Brand[]) || [];
+  }
+
+  async getBrandById(id: string): Promise<Brand | null> {
+    const { data, error } = await this.supabase.rpc('get_brand_by_id', {
+      brand_id: id
+    });
+
+    if (error) {
+      console.error('Error fetching brand:', error);
+      return null;
+    }
+
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return null;
+    }
+
+    // RPC returns an array, get the first element
+    const brand = Array.isArray(data) ? data[0] : data;
+    return brand as unknown as Brand;
   }
 }
 
