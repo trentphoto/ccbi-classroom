@@ -194,10 +194,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  new_user_id TEXT;
+  new_user_id UUID;
   new_user RECORD;
 BEGIN
-  new_user_id := gen_random_uuid()::TEXT;
+  new_user_id := gen_random_uuid();
 
   INSERT INTO users (id, email, name, role, is_active, created_at)
   VALUES (
