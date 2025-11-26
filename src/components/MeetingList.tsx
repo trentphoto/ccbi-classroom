@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { ClassMeeting, AttendanceRecord } from '@/types/db';
+import { ClassMeeting, AttendanceRecord, User } from '@/types/db';
 // Using native JavaScript date formatting
 
 interface MeetingListProps {
   meetings: ClassMeeting[];
   attendanceRecords: AttendanceRecord[];
+  students: User[];
   onEditMeeting: (meeting: ClassMeeting) => void;
   onDeleteMeeting: (meetingId: string) => void;
   onViewMeeting: (meetingId: string) => void;
@@ -17,6 +18,7 @@ interface MeetingListProps {
 export default function MeetingList({
   meetings,
   attendanceRecords,
+  students,
   onEditMeeting,
   onDeleteMeeting,
   onViewMeeting,
@@ -42,7 +44,9 @@ export default function MeetingList({
   const getAttendanceStats = (meetingId: string) => {
     const records = attendanceRecords.filter(record => record.meeting_id === meetingId);
     const present = records.filter(record => record.status === 'present').length;
-    const absent = records.filter(record => record.status === 'absent').length;
+    // Calculate absent as: total students enrolled - present students
+    // This matches the logic used in the meeting detail page
+    const absent = Math.max(0, students.length - present);
 
     return { present, absent, total: records.length };
   };
@@ -102,11 +106,18 @@ export default function MeetingList({
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {meeting.meeting_title}
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
                   {formatMeetingDate(meeting.meeting_date)}
-                </p>
+                </h3>
+                {meeting.notes && (
+                  <p className="text-sm text-gray-600 mb-4">
+                    {meeting.notes}
+                  </p>
+                )}
+                {!meeting.notes && (
+                  <p className="text-sm text-gray-400 mb-4 italic">
+                    No notes
+                  </p>
+                )}
 
                 {hasAttendance ? (
                   <div className="flex items-center space-x-4 text-sm">

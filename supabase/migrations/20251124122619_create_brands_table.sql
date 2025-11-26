@@ -29,10 +29,14 @@ ON CONFLICT (id) DO NOTHING;
 -- Update users table to reference brands table (if not already a foreign key)
 
 -- Add foreign key constraints if they don't exist
+-- Only add constraints if the brand_id columns exist
 DO $$ 
 BEGIN
-  -- Check if foreign key constraint exists on users.brand_id
-  IF NOT EXISTS (
+  -- Check if brand_id column exists on users table and foreign key constraint doesn't exist
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'brand_id'
+  ) AND NOT EXISTS (
     SELECT 1 FROM pg_constraint 
     WHERE conname = 'users_brand_id_fkey'
   ) THEN
@@ -41,8 +45,11 @@ BEGIN
     FOREIGN KEY (brand_id) REFERENCES brands(id);
   END IF;
 
-  -- Check if foreign key constraint exists on classes.brand_id
-  IF NOT EXISTS (
+  -- Check if brand_id column exists on classes table and foreign key constraint doesn't exist
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'classes' AND column_name = 'brand_id'
+  ) AND NOT EXISTS (
     SELECT 1 FROM pg_constraint 
     WHERE conname = 'classes_brand_id_fkey'
   ) THEN
@@ -52,7 +59,21 @@ BEGIN
   END IF;
 END $$;
 
--- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_users_brand_id ON users(brand_id);
-CREATE INDEX IF NOT EXISTS idx_classes_brand_id ON classes(brand_id);
+-- Create index for faster lookups (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'brand_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_users_brand_id ON users(brand_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'classes' AND column_name = 'brand_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_classes_brand_id ON classes(brand_id);
+  END IF;
+END $$;
 

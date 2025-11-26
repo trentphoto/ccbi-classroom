@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Class } from '@/types/db';
-import { CURRENT_BRAND_ID } from '@/lib/brand';
 
 interface ClassFormDialogProps {
   open: boolean;
@@ -102,11 +101,7 @@ export default function ClassFormDialog({
     if (isSubmitting) return; // Prevent multiple submissions
 
     if (validateForm()) {
-      const formDataWithBrand = {
-        ...formData,
-        brand_id: CURRENT_BRAND_ID
-      };
-      onSubmit(formDataWithBrand);
+      onSubmit(formData);
       // Note: Dialog closing is now handled by the parent component after async operation completes
     }
   };

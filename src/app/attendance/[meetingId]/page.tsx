@@ -106,7 +106,12 @@ export default function MeetingPage() {
       setIsSubmittingMeeting(true);
       const updatedMeeting = await db.updateClassMeeting(meeting.id, meetingData);
       setMeeting(updatedMeeting);
-      toast.success(`Meeting "${updatedMeeting.meeting_title}" updated successfully!`);
+      const meetingDate = new Date(updatedMeeting.meeting_date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      toast.success(`Meeting for ${meetingDate} updated successfully!`);
       setMeetingDialogOpen(false);
     } catch (err) {
       console.error('Error updating meeting:', err);
@@ -451,7 +456,13 @@ export default function MeetingPage() {
                   >
                     ← Back to Attendance
                   </Button>
-                  <h1 className="text-3xl font-bold text-gray-900">{meeting.meeting_title}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {new Date(meeting.meeting_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </h1>
                 </div>
                 <p className="text-gray-600">
                   {classData?.name} • {new Date(meeting.meeting_date).toLocaleDateString('en-US', {
@@ -1201,7 +1212,11 @@ export default function MeetingPage() {
         open={csvUploadOpen}
         onOpenChange={setCsvUploadOpen}
         meetingId={meetingId}
-        meetingTitle={meeting?.meeting_title || 'Meeting'}
+        meetingTitle={meeting ? new Date(meeting.meeting_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) : 'Meeting'}
         students={students}
         onUploadComplete={handleCSVUploadComplete}
         isUploading={isUploading}

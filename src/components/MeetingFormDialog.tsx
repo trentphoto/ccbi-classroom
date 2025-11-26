@@ -33,8 +33,8 @@ export default function MeetingFormDialog({
   isSubmitting = false
 }: MeetingFormDialogProps) {
   const [formData, setFormData] = useState({
-    meeting_title: '',
-    meeting_date: ''
+    meeting_date: '',
+    notes: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -43,13 +43,13 @@ export default function MeetingFormDialog({
     if (open) {
       if (mode === 'edit' && meetingData) {
         setFormData({
-          meeting_title: meetingData.meeting_title || '',
-          meeting_date: meetingData.meeting_date ? new Date(meetingData.meeting_date).toISOString().split('T')[0] : ''
+          meeting_date: meetingData.meeting_date ? new Date(meetingData.meeting_date).toISOString().split('T')[0] : '',
+          notes: meetingData.notes || ''
         });
       } else {
         setFormData({
-          meeting_title: '',
-          meeting_date: new Date().toISOString().split('T')[0] // Default to today
+          meeting_date: new Date().toISOString().split('T')[0], // Default to today
+          notes: ''
         });
       }
       setErrors({});
@@ -66,12 +66,6 @@ export default function MeetingFormDialog({
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.meeting_title.trim()) {
-      newErrors.meeting_title = 'Meeting title is required';
-    } else if (formData.meeting_title.trim().length < 3) {
-      newErrors.meeting_title = 'Meeting title must be at least 3 characters';
-    }
 
     if (!formData.meeting_date) {
       newErrors.meeting_date = 'Meeting date is required';
@@ -91,16 +85,16 @@ export default function MeetingFormDialog({
     try {
       const meetingData: Omit<ClassMeeting, 'id' | 'created_at'> = {
         class_id: classId,
-        meeting_title: formData.meeting_title.trim(),
-        meeting_date: new Date(formData.meeting_date)
+        meeting_date: new Date(formData.meeting_date),
+        notes: formData.notes.trim() || null
       };
 
       await onSubmit(meetingData);
       
       // Reset form on success
       setFormData({
-        meeting_title: '',
-        meeting_date: new Date().toISOString().split('T')[0]
+        meeting_date: new Date().toISOString().split('T')[0],
+        notes: ''
       });
       setErrors({});
     } catch (error) {
@@ -111,8 +105,8 @@ export default function MeetingFormDialog({
 
   const handleCancel = () => {
     setFormData({
-      meeting_title: '',
-      meeting_date: new Date().toISOString().split('T')[0]
+      meeting_date: new Date().toISOString().split('T')[0],
+      notes: ''
     });
     setErrors({});
     onOpenChange(false);
@@ -135,23 +129,6 @@ export default function MeetingFormDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="meeting_title" className="text-sm font-medium text-gray-700">
-              Meeting Title *
-            </label>
-            <Input
-              id="meeting_title"
-              type="text"
-              placeholder="e.g., Week 3 - Bible Study, Chapter 5 Discussion"
-              value={formData.meeting_title}
-              onChange={(e) => handleInputChange('meeting_title', e.target.value)}
-              className={errors.meeting_title ? 'border-red-500' : ''}
-            />
-            {errors.meeting_title && (
-              <p className="text-sm text-red-600">{errors.meeting_title}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
             <label htmlFor="meeting_date" className="text-sm font-medium text-gray-700">
               Meeting Date *
             </label>
@@ -165,6 +142,20 @@ export default function MeetingFormDialog({
             {errors.meeting_date && (
               <p className="text-sm text-red-600">{errors.meeting_date}</p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="notes" className="text-sm font-medium text-gray-700">
+              Notes (Optional)
+            </label>
+            <textarea
+              id="notes"
+              placeholder="Optional: Include the lesson name or lesson title"
+              value={formData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              rows={4}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
           </div>
 
           <DialogFooter>

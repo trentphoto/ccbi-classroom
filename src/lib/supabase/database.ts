@@ -1,18 +1,15 @@
 import { createClient } from './client';
-import { Class, User, Lesson, Submission, ClassEnrollment, ClassMeeting, AttendanceRecord, Brand } from '@/types/db';
-import { CURRENT_BRAND_ID } from '@/lib/brand';
+import { Class, User, Lesson, Submission, ClassEnrollment, ClassMeeting, AttendanceRecord } from '@/types/db';
 
 // Database service class for all Supabase operations
 export class DatabaseService {
   private supabase = createClient();
-  private brandId = CURRENT_BRAND_ID;
 
   // Class operations
   async getClasses(): Promise<Class[]> {
     const { data, error } = await this.supabase
       .from('classes')
       .select('*')
-      .eq('brand_id', this.brandId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -28,7 +25,6 @@ export class DatabaseService {
       .from('classes')
       .select('*')
       .eq('id', id)
-      .eq('brand_id', this.brandId)
       .single();
 
     if (error) {
@@ -41,11 +37,10 @@ export class DatabaseService {
 
   async createClass(classData: Omit<Class, 'id' | 'created_at' | 'updated_at'>): Promise<Class> {
     try {
-      // Use RPC function to create class (bypasses RLS and validates brand_id)
+      // Use RPC function to create class (bypasses RLS)
       const { data, error } = await this.supabase.rpc('create_class', {
         class_name: classData.name,
         class_description: classData.description,
-        class_brand_id: this.brandId,
         class_is_active: classData.is_active ?? true
       });
 
@@ -111,7 +106,6 @@ export class DatabaseService {
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
-      .eq('brand_id', this.brandId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -126,7 +120,6 @@ export class DatabaseService {
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
-      .eq('brand_id', this.brandId)
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
@@ -142,7 +135,6 @@ export class DatabaseService {
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
-      .eq('brand_id', this.brandId)
       .eq('is_active', false)
       .order('created_at', { ascending: false });
 
@@ -159,7 +151,6 @@ export class DatabaseService {
       .from('users')
       .select('*')
       .eq('id', id)
-      .eq('brand_id', this.brandId)
       .single();
 
     if (error) {
@@ -175,7 +166,6 @@ export class DatabaseService {
       .from('users')
       .select('*')
       .eq('email', email.toLowerCase())
-      .eq('brand_id', this.brandId)
       .single();
 
     if (error) {
@@ -196,8 +186,7 @@ export class DatabaseService {
       const { data: result, error: functionError } = await this.supabase.rpc('create_user_profile', {
         user_email: userData.email,
         user_name: userData.name,
-        user_role: userData.role,
-        user_brand_id: this.brandId
+        user_role: userData.role
       });
 
       if (functionError) {
@@ -384,17 +373,17 @@ export class DatabaseService {
         user_id,
         users!inner(*)
       `)
-      .eq('class_id', classId)
-      .eq('users.role', 'student')
-      .eq('users.is_active', true);
+      .eq('class_id', classId);
 
     if (error) {
       console.error('Error fetching students by class:', error);
       throw new Error('Failed to fetch students by class');
     }
 
-    // Sort the results by user name after fetching
-    const sortedData = (data as unknown as Array<{ users: User }>)?.sort((a, b) => 
+    // Filter and sort the results by user name after fetching
+    const sortedData = (data as unknown as Array<{ users: User }>)?.filter(
+      (enrollment) => enrollment.users.role === 'student'
+    ).sort((a, b) => 
       a.users.name.localeCompare(b.users.name)
     ) || [];
 
@@ -614,11 +603,7 @@ export class DatabaseService {
   async getClassMeetings(): Promise<ClassMeeting[]> {
     const { data, error } = await this.supabase
       .from('class_meetings')
-      .select(`
-        *,
-        classes!inner(brand_id)
-      `)
-      .eq('classes.brand_id', this.brandId)
+      .select('*')
       .order('meeting_date', { ascending: false });
 
     if (error) {
@@ -632,12 +617,8 @@ export class DatabaseService {
   async getClassMeetingsByClass(classId: string): Promise<ClassMeeting[]> {
     const { data, error } = await this.supabase
       .from('class_meetings')
-      .select(`
-        *,
-        classes!inner(brand_id)
-      `)
+      .select('*')
       .eq('class_id', classId)
-      .eq('classes.brand_id', this.brandId)
       .order('meeting_date', { ascending: false });
 
     if (error) {
@@ -695,14 +676,7 @@ export class DatabaseService {
   async getAttendanceRecords(): Promise<AttendanceRecord[]> {
     const { data, error } = await this.supabase
       .from('attendance_records')
-      .select(`
-        *,
-        class_meetings!inner(
-          class_id,
-          classes!inner(brand_id)
-        )
-      `)
-      .eq('class_meetings.classes.brand_id', this.brandId)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -716,15 +690,8 @@ export class DatabaseService {
   async getAttendanceRecordsByMeeting(meetingId: string): Promise<AttendanceRecord[]> {
     const { data, error } = await this.supabase
       .from('attendance_records')
-      .select(`
-        *,
-        class_meetings!inner(
-          class_id,
-          classes!inner(brand_id)
-        )
-      `)
+      .select('*')
       .eq('meeting_id', meetingId)
-      .eq('class_meetings.classes.brand_id', this.brandId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -738,15 +705,8 @@ export class DatabaseService {
   async getAttendanceRecordsByStudent(studentId: string): Promise<AttendanceRecord[]> {
     const { data, error } = await this.supabase
       .from('attendance_records')
-      .select(`
-        *,
-        class_meetings!inner(
-          class_id,
-          classes!inner(brand_id)
-        )
-      `)
+      .select('*')
       .eq('student_id', studentId)
-      .eq('class_meetings.classes.brand_id', this.brandId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -814,36 +774,6 @@ export class DatabaseService {
     }
   }
 
-  // Brand operations (using RPC to bypass RLS)
-  async getBrands(): Promise<Brand[]> {
-    const { data, error } = await this.supabase.rpc('get_brands');
-
-    if (error) {
-      console.error('Error fetching brands:', error);
-      throw new Error('Failed to fetch brands');
-    }
-
-    return (data as unknown as Brand[]) || [];
-  }
-
-  async getBrandById(id: string): Promise<Brand | null> {
-    const { data, error } = await this.supabase.rpc('get_brand_by_id', {
-      brand_id: id
-    });
-
-    if (error) {
-      console.error('Error fetching brand:', error);
-      return null;
-    }
-
-    if (!data || (Array.isArray(data) && data.length === 0)) {
-      return null;
-    }
-
-    // RPC returns an array, get the first element
-    const brand = Array.isArray(data) ? data[0] : data;
-    return brand as unknown as Brand;
-  }
 }
 
 // Export singleton instance

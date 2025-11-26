@@ -4,7 +4,7 @@ export enum UserRole {
     STUDENT = 'student',
   }
 
-// Define brand types
+// Define brand types (kept for brand.ts compatibility, but not used in database)
 export type BrandId = 'ccbi' | 'zts' | 'nbi';
 
 // Define enum for brand types (for backward compatibility)
@@ -13,27 +13,6 @@ export enum BrandType {
     ZTS = 'zts',
     NBI = 'nbi',
   }
-
-// Type for Brand entity - matches Supabase brands table
-export interface Brand {
-  id: string; // Brand identifier ('ccbi', 'zts', 'nbi')
-  name: string; // Display name (e.g., 'CCBI Classroom')
-  full_name: string | null; // Full organization name
-  description: string | null; // Brand description/tagline
-  slug: string; // URL-friendly slug
-  logo_url: string | null; // Path to logo
-  logo_white_url: string | null; // Path to white logo variant
-  primary_color: string | null; // Primary brand color
-  secondary_color: string | null; // Secondary brand color
-  accent_color: string | null; // Accent brand color
-  support_email: string | null; // Support email address
-  admin_email: string | null; // Admin email address
-  website: string | null; // Brand website URL
-  domain: string | null; // Deployment domain
-  is_active: boolean; // Whether the brand is active
-  created_at: Date; // Created timestamp
-  updated_at: Date; // Updated timestamp
-}
   
   // Type for User entity - matches Supabase users table
   export interface User {
@@ -41,7 +20,6 @@ export interface Brand {
     email: string;
     role: UserRole;
     name: string;
-    brand_id: string; // Brand identifier (references brands.id)
     is_active: boolean; // Whether the user is active or inactive
     deactivated_at: Date | null; // Timestamp when user was permanently deactivated
     created_at: Date; // Required timestamp
@@ -52,7 +30,6 @@ export interface Brand {
     id: string; // UUID
     name: string;
     description: string;
-    brand_id: BrandId; // Brand identifier (references brands.id)
     is_active: boolean;
     created_at: Date; // Required timestamp
     updated_at: Date; // Required timestamp
@@ -124,7 +101,7 @@ export interface ClassMeeting {
   id: string; // UUID
   class_id: string; // UUID
   meeting_date: Date;
-  meeting_title: string;
+  notes: string | null; // Optional notes field
   created_at: Date; // Required timestamp
 }
 
@@ -168,13 +145,13 @@ export interface AdminDashboard {
   // You can use this to mock the data in your React components
   
   export const mockUsers: User[] = [
-    { id: 'user1', email: 'admin@example.com', role: UserRole.ADMIN, name: 'Admin Teacher', is_active: true, deactivated_at: null, created_at: new Date(), brand_id: 'ccbi' },
-    { id: 'user2', email: 'student1@example.com', role: UserRole.STUDENT, name: 'Student One', is_active: true, deactivated_at: null, created_at: new Date(), brand_id: 'ccbi' },
+    { id: 'user1', email: 'admin@example.com', role: UserRole.ADMIN, name: 'Admin Teacher', is_active: true, deactivated_at: null, created_at: new Date() },
+    { id: 'user2', email: 'student1@example.com', role: UserRole.STUDENT, name: 'Student One', is_active: true, deactivated_at: null, created_at: new Date() },
     // Add more as needed
   ];
   
   export const mockClasses: Class[] = [
-    { id: 'class1', name: 'Math 101', description: 'Basic Mathematics', is_active: true, created_at: new Date(), updated_at: new Date(), brand_id: 'ccbi' },
+    { id: 'class1', name: 'Math 101', description: 'Basic Mathematics', is_active: true, created_at: new Date(), updated_at: new Date() },
     // Add more
   ];
   

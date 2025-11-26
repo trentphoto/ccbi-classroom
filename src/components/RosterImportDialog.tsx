@@ -552,7 +552,6 @@ export default function RosterImportDialog({
                 email: student.email,
                 name: student.name,
                 role: UserRole.STUDENT,
-                brand_id: '', // Will be set by the database service
                 is_active: true, // Students are active by default when imported
                 deactivated_at: null
               }),

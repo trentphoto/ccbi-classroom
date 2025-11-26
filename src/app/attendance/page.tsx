@@ -169,13 +169,23 @@ export default function AttendancePage() {
       if (meetingDialogMode === 'create') {
         const newMeeting = await db.createClassMeeting(meetingData);
         setMeetings(prev => [newMeeting, ...prev]);
-        toast.success(`Meeting "${newMeeting.meeting_title}" created successfully!`);
+        const meetingDate = new Date(newMeeting.meeting_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        toast.success(`Meeting for ${meetingDate} created successfully!`);
       } else if (meetingDialogMode === 'edit' && editingMeeting) {
         const updatedMeeting = await db.updateClassMeeting(editingMeeting.id, meetingData);
         setMeetings(prev => prev.map(meeting => 
           meeting.id === updatedMeeting.id ? updatedMeeting : meeting
         ));
-        toast.success(`Meeting "${updatedMeeting.meeting_title}" updated successfully!`);
+        const meetingDate = new Date(updatedMeeting.meeting_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        toast.success(`Meeting for ${meetingDate} updated successfully!`);
       }
 
       // Close dialog and reset state
@@ -328,6 +338,7 @@ export default function AttendancePage() {
               <MeetingList
                 meetings={classMeetings}
                 attendanceRecords={attendanceRecords}
+                students={students}
                 onEditMeeting={handleEditMeeting}
                 onDeleteMeeting={handleDeleteMeeting}
                 onViewMeeting={handleViewMeeting}

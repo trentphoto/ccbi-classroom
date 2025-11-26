@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Conversation, ConversationWithMessages, UserRole } from '@/types/db';
-import { getDefaultBrandId, getAdminEmail } from '@/lib/brand';
+import { getAdminEmail } from '@/lib/brand';
 
 // Sample messaging data for future use
 export const sampleConversations: ConversationWithMessages[] = [
@@ -19,7 +19,6 @@ export const sampleConversations: ConversationWithMessages[] = [
       email: 'michael.chen@example.com',
       role: UserRole.STUDENT,
       name: 'Michael Chen',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       deactivated_at: null,
       created_at: new Date('2024-01-20')
@@ -29,7 +28,6 @@ export const sampleConversations: ConversationWithMessages[] = [
       email: getAdminEmail(),
       role: UserRole.ADMIN,
       name: 'Admin User',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       deactivated_at: null,
       created_at: new Date('2024-01-15')
@@ -38,7 +36,6 @@ export const sampleConversations: ConversationWithMessages[] = [
       id: 'class1',
       name: 'April 2025 MTh MDiv',
       description: 'Master of Divinity Program - Monday/Thursday Schedule',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       created_at: new Date('2024-01-15'),
       updated_at: new Date('2024-01-15')
@@ -83,7 +80,6 @@ export const sampleConversations: ConversationWithMessages[] = [
       email: 'emily.rodriguez@example.com',
       role: UserRole.STUDENT,
       name: 'Emily Rodriguez',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       deactivated_at: null,
       created_at: new Date('2024-01-20')
@@ -93,7 +89,6 @@ export const sampleConversations: ConversationWithMessages[] = [
       email: getAdminEmail(),
       role: UserRole.ADMIN,
       name: 'Admin User',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       deactivated_at: null,
       created_at: new Date('2024-01-15')
@@ -102,7 +97,6 @@ export const sampleConversations: ConversationWithMessages[] = [
       id: 'class1',
       name: 'April 2025 MTh MDiv',
       description: 'Master of Divinity Program - Monday/Thursday Schedule',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       created_at: new Date('2024-01-15'),
       updated_at: new Date('2024-01-15')
@@ -164,7 +158,6 @@ export const createConversation = (
       email: '',
       role: UserRole.STUDENT,
       name: '',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       deactivated_at: null,
       created_at: new Date()
@@ -174,7 +167,6 @@ export const createConversation = (
       email: '',
       role: UserRole.ADMIN,
       name: '',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       deactivated_at: null,
       created_at: new Date()
@@ -183,7 +175,6 @@ export const createConversation = (
       id: classId,
       name: '',
       description: '',
-      brand_id: getDefaultBrandId(),
       is_active: true,
       created_at: new Date(),
       updated_at: new Date()
