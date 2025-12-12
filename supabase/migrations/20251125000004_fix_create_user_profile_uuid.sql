@@ -82,3 +82,4 @@ $$;
 GRANT EXECUTE ON FUNCTION create_user_profile(TEXT, TEXT, TEXT, TEXT, BOOLEAN) TO authenticated;
 GRANT EXECUTE ON FUNCTION create_user_profile(TEXT, TEXT, TEXT, TEXT, BOOLEAN) TO anon;
 
+
