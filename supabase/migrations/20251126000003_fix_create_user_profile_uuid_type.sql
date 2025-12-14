@@ -59,3 +59,4 @@ GRANT EXECUTE ON FUNCTION create_user_profile(TEXT, TEXT, TEXT) TO authenticated
 GRANT EXECUTE ON FUNCTION create_user_profile(TEXT, TEXT, TEXT) TO anon;
 
 
+

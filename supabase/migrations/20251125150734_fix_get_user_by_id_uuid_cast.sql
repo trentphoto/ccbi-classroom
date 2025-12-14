@@ -39,3 +39,4 @@ GRANT EXECUTE ON FUNCTION get_user_by_id(TEXT, TEXT) TO anon;
 
 
 
+
