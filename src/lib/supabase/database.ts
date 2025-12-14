@@ -464,40 +464,101 @@ export class DatabaseService {
   }
 
   async createLesson(lessonData: Omit<Lesson, 'id' | 'created_at'>): Promise<Lesson> {
-    const { data, error } = await this.supabase
-      .from('lessons')
-      .insert([lessonData])
-      .select()
-      .single();
+    try {
+      // Use RPC function to create lesson (bypasses RLS)
+      const { data, error } = await this.supabase.rpc('create_lesson', {
+        lesson_class_id: lessonData.class_id,
+        lesson_title: lessonData.title,
+        lesson_description: lessonData.description,
+        lesson_due_date: lessonData.due_date ? new Date(lessonData.due_date).toISOString().split('T')[0] : null,
+        lesson_video_url: lessonData.video_url,
+        lesson_file_path: lessonData.file_path
+      });
 
-    if (error) {
-      console.error('Error creating lesson:', error);
-      throw new Error('Failed to create lesson');
+      if (error) {
+        console.error('Error creating lesson:', error);
+        throw new Error(`Failed to create lesson: ${error.message}`);
+      }
+
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        console.error('No data returned from lesson creation');
+        throw new Error('No data returned from lesson creation');
+      }
+
+      // RPC returns an array, get the first element
+      const newLesson = Array.isArray(data) ? data[0] : data;
+      
+      // Convert the returned data to match Lesson interface
+      return {
+        id: newLesson.id,
+        class_id: newLesson.class_id,
+        title: newLesson.title,
+        description: newLesson.description,
+        due_date: newLesson.due_date ? new Date(newLesson.due_date) : null,
+        video_url: newLesson.video_url,
+        file_path: newLesson.file_path,
+        created_at: new Date(newLesson.created_at)
+      } as Lesson;
+    } catch (error) {
+      console.error('Exception in createLesson:', error);
+      throw error;
     }
-
-    return data;
   }
 
   async updateLesson(id: string, updates: Partial<Omit<Lesson, 'id' | 'created_at'>>): Promise<Lesson> {
     try {
-      const { data, error } = await this.supabase
-        .from('lessons')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      // Build RPC parameters - only include fields that are in the updates object
+      const rpcParams: Record<string, unknown> = {
+        lesson_id: id
+      };
+
+      // Only add parameters for fields that are actually being updated
+      if (updates.class_id !== undefined) {
+        rpcParams.lesson_class_id = updates.class_id;
+      }
+      if (updates.title !== undefined) {
+        rpcParams.lesson_title = updates.title;
+      }
+      if (updates.description !== undefined) {
+        rpcParams.lesson_description = updates.description;
+      }
+      if (updates.due_date !== undefined) {
+        rpcParams.lesson_due_date = updates.due_date ? new Date(updates.due_date).toISOString().split('T')[0] : null;
+      }
+      if (updates.video_url !== undefined) {
+        rpcParams.lesson_video_url = updates.video_url;
+      }
+      if (updates.file_path !== undefined) {
+        rpcParams.lesson_file_path = updates.file_path;
+      }
+
+      // Use RPC function to update lesson (bypasses RLS)
+      const { data, error } = await this.supabase.rpc('update_lesson', rpcParams);
 
       if (error) {
         console.error('Error updating lesson:', error);
         throw new Error(`Failed to update lesson: ${error.message}`);
       }
 
-      if (!data) {
+      if (!data || (Array.isArray(data) && data.length === 0)) {
         console.error('No data returned from lesson update');
         throw new Error('No data returned from lesson update');
       }
 
-      return data;
+      // RPC returns an array, get the first element
+      const updatedLesson = Array.isArray(data) ? data[0] : data;
+      
+      // Convert the returned data to match Lesson interface
+      return {
+        id: updatedLesson.id,
+        class_id: updatedLesson.class_id,
+        title: updatedLesson.title,
+        description: updatedLesson.description,
+        due_date: updatedLesson.due_date ? new Date(updatedLesson.due_date) : null,
+        video_url: updatedLesson.video_url,
+        file_path: updatedLesson.file_path,
+        created_at: new Date(updatedLesson.created_at)
+      } as Lesson;
     } catch (error) {
       console.error('Exception in updateLesson:', error);
       throw error;

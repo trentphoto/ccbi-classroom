@@ -106,7 +106,7 @@ export default function StudentDashboard() {
       setSubmissions(updatedSubmissions);
       
       setSubmissionFile(null);
-      alert('Lesson assignment submitted successfully!');
+      alert('Assignment submitted successfully!');
     } catch (err) {
       console.error('Error submitting assignment:', err);
       alert('Failed to submit assignment. Please try again.');
@@ -169,7 +169,7 @@ export default function StudentDashboard() {
           {/* Current Lesson Section */}
           <div className="bg-white rounded-lg shadow-md border mb-8">
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Current Lesson</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Current Assignment</h2>
               
               {currentLesson ? (
                 <div className="grid lg:grid-cols-2 gap-8">
@@ -197,7 +197,7 @@ export default function StudentDashboard() {
                       </div>
                     ) : (
                       <div className="bg-gray-100 rounded-lg p-4">
-                        <p className="text-gray-500">No video content for this lesson.</p>
+                        <p className="text-gray-500">No video content for this assignment.</p>
                       </div>
                     )}
                   </div>
@@ -231,7 +231,7 @@ export default function StudentDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <p className="text-gray-600">Submit your assignment for this lesson.</p>
+                        <p className="text-gray-600">Submit your assignment file below.</p>
                         
                         <div>
                           <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 mb-2">
@@ -262,8 +262,8 @@ export default function StudentDashboard() {
                   <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Lessons Available</h3>
-                  <p className="text-gray-500">Check back later for new lessons.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Assignments Available</h3>
+                  <p className="text-gray-500">Check back later for new assignments.</p>
                 </div>
               )}
             </div>
@@ -272,7 +272,7 @@ export default function StudentDashboard() {
           {/* Lessons List */}
           <div className="bg-white rounded-lg shadow-md border">
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">All Lessons</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">All Assignments</h2>
               
               {lessons.length > 0 ? (
                 <div className="space-y-4">
@@ -306,7 +306,7 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No lessons available yet.</p>
+                  <p className="text-gray-500">No assignments available yet.</p>
                 </div>
               )}
             </div>

@@ -162,7 +162,7 @@ export default function SubmissionReviewPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Lesson</label>
+                    <label className="block text-sm font-medium text-gray-700">Assignment</label>
                     <p className="mt-1 text-sm text-gray-900">{lesson.title}</p>
                     <p className="text-sm text-gray-500">{lesson.description}</p>
                   </div>

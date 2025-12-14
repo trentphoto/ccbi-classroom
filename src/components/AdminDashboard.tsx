@@ -22,7 +22,7 @@ import ClassFormDialog from './ClassFormDialog';
 import LessonFormDialog from './LessonFormDialog';
 import RosterImportDialog from './RosterImportDialog';
 
-type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'attendance' | 'messages';
+type TabType = 'overview' | 'students' | 'assignments' | 'attendance' | 'messages';
 
 export default function AdminDashboard() {
   // const { user } = useAuth(); // Unused for now
@@ -462,7 +462,7 @@ export default function AdminDashboard() {
         ]) as Lesson;
         
         setLessons(prev => [newLesson, ...prev]);
-        toast.success(`Lesson "${newLesson.title}" created successfully!`);
+        toast.success(`Assignment "${newLesson.title}" created successfully!`);
       } else if (lessonDialogMode === 'edit' && editingLesson) {
         const updatedLesson = await Promise.race([
           db.updateLesson(editingLesson.id, lessonData),
@@ -470,7 +470,7 @@ export default function AdminDashboard() {
         ]) as Lesson;
         
         setLessons(prev => prev.map(lesson => lesson.id === updatedLesson.id ? updatedLesson : lesson));
-        toast.success(`Lesson "${updatedLesson.title}" updated successfully!`);
+        toast.success(`Assignment "${updatedLesson.title}" updated successfully!`);
       }
 
       // Close dialog and reset state
@@ -485,9 +485,9 @@ export default function AdminDashboard() {
         if (err.message.includes('timeout')) {
           errorMessage = 'Request timed out after 8 seconds. Please check your connection and try again.';
         } else if (err.message.includes('Failed to create lesson')) {
-          errorMessage = 'Failed to create lesson. Please try again.';
+          errorMessage = 'Failed to create assignment. Please try again.';
         } else if (err.message.includes('Failed to update lesson')) {
-          errorMessage = 'Failed to update lesson. Please try again.';
+          errorMessage = 'Failed to update assignment. Please try again.';
         } else {
           errorMessage = err.message;
         }
@@ -631,8 +631,7 @@ export default function AdminDashboard() {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'students', label: 'Students', count: classStudents.length },
-    { id: 'lessons', label: 'Lessons', count: classLessons.length },
-    { id: 'submissions', label: 'Submissions', count: classSubmissions.length },
+    { id: 'assignments', label: 'Assignments', count: classLessons.length },
     { id: 'attendance', label: 'Attendance', count: 0 }, // TODO: Implement attendance
     { id: 'messages', label: 'Messages', count: 0 }, // TODO: Implement messaging
   ];
@@ -688,7 +687,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Lessons</p>
+              <p className="text-sm font-medium text-gray-600">Assignments</p>
               <p className="text-2xl font-semibold text-gray-900">{classLessons.length}</p>
             </div>
           </div>
@@ -912,11 +911,11 @@ export default function AdminDashboard() {
     </div>
   );
 
-  const renderLessons = () => (
+  const renderAssignments = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Class Lessons</h3>
-        <Button onClick={handleCreateLesson}>Create Lesson</Button>
+        <h3 className="text-lg font-semibold text-gray-900">Class Assignments</h3>
+        <Button onClick={handleCreateLesson}>Create Assignment</Button>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -942,7 +941,7 @@ export default function AdminDashboard() {
                   </Button>
                 )}
                 <Button size="sm" variant="outline" onClick={() => handleEditLesson(lesson)}>Edit</Button>
-                <Button size="sm">View Submissions</Button>
+                <Button size="sm" onClick={() => router.push(`/submissions/lesson/${lesson.id}`)}>View Submissions</Button>
               </div>
             </div>
           );
@@ -951,62 +950,6 @@ export default function AdminDashboard() {
     </div>
   );
 
-  const renderSubmissions = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">All Submissions</h3>
-        <Button>Export Grades</Button>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lesson</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {classSubmissions.map((submission) => {
-              const lesson = classLessons.find(l => l.id === submission.lesson_id);
-              const student = classStudents.find(s => s.id === submission.student_id);
-              
-              return (
-                <tr key={submission.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student?.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lesson?.title}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(submission.submitted_at).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {submission.grade ? (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {submission.grade}%
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Ungraded
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => router.push(`/submissions/${submission.id}`)}
-                    >
-                      Review
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
 
   const renderAttendance = () => {
     return (
@@ -1060,10 +1003,8 @@ export default function AdminDashboard() {
         return renderOverview();
       case 'students':
         return renderStudents();
-      case 'lessons':
-        return renderLessons();
-      case 'submissions':
-        return renderSubmissions();
+      case 'assignments':
+        return renderAssignments();
       case 'attendance':
         return renderAttendance();
       case 'messages':
@@ -1076,124 +1017,91 @@ export default function AdminDashboard() {
   return (
     <>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
+          <div className="mb-8 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-3xl font-bold text-gray-900">Admin Dashboard</h2>
               <p className="mt-2 text-gray-600">Manage all classrooms here.</p>
             </div>
-          </div>
-
-          {/* Class Selector */}
-          <div className="bg-white rounded-lg shadow-md border mb-6">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <label htmlFor="class-select" className="block text-sm font-medium text-gray-700">
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-5 h-5 text-[#072c68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            
+            {/* Class Selector - Compact */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsClassDropdownOpen(!isClassDropdownOpen)}
+                className="flex items-center justify-between px-3 py-2 text-left bg-white border-2 border-gray-200 rounded-lg shadow-sm hover:border-[#072c68]/50 hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#072c68]/20 focus:border-[#072c68] min-w-[200px]"
+              >
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                  <div className="p-1 bg-gradient-to-br from-[#072c68]/10 to-[#086623]/10 rounded">
+                    <svg className="w-4 h-4 text-[#072c68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    <span>Select Your Class</span>
                   </div>
-                </label>
-                <Button 
-                  size="sm" 
-                  onClick={handleCreateClass}
-                  className="text-xs"
-                >
-                  + New Class
-                </Button>
-              </div>
-              
-              {/* Custom Dropdown */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsClassDropdownOpen(!isClassDropdownOpen)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-left bg-white border-2 border-gray-200 rounded-lg shadow-sm hover:border-[#072c68]/50 hover:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#072c68]/20 focus:border-[#072c68]"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-gradient-to-br from-[#072c68]/10 to-[#086623]/10 rounded-lg">
-                      <svg className="w-5 h-5 text-[#072c68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-gray-900 truncate">
+                      {selectedClass?.name || 'Choose a class...'}
                     </div>
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {selectedClass?.name || 'Choose a class...'}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {selectedClass?.description ?
-                          (selectedClass.description.length > 50 ?
-                            selectedClass.description.substring(0, 50).trim() + '...' :
-                            selectedClass.description
-                          ) :
-                          'Select a class to get started'
+                  </div>
+                </div>
+                <div className="flex items-center space-x-1.5 ml-2 flex-shrink-0">
+                  <div className={`w-1.5 h-1.5 rounded-full ${selectedClass?.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <svg
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-150 ${isClassDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
+              
+              {/* Dropdown Menu */}
+              {isClassDropdownOpen && (
+                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in slide-in-from-top-1 duration-150 right-0 min-w-[280px]">
+                  {classes.map((cls) => (
+                    <button
+                      key={cls.id}
+                      onClick={() => {
+                        setSelectedClassId(cls.id);
+                        try {
+                          localStorage.setItem('adminSelectedClassId', cls.id);
+                        } catch (error) {
+                          console.warn('Could not save selected class to localStorage:', error);
                         }
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedClass?.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <svg
-                      className={`w-5 h-5 text-gray-400 transition-transform duration-150 ${isClassDropdownOpen ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                        setIsClassDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gradient-to-r hover:from-[#072c68]/5 hover:to-[#086623]/5 transition-all duration-100 ${
+                        selectedClassId === cls.id ? 'bg-gradient-to-r from-[#072c68]/10 to-[#086623]/10 border-l-4 border-[#072c68]' : ''
+                      }`}
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </button>
-                
-                {/* Dropdown Menu */}
-                {isClassDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in slide-in-from-top-1 duration-150">
-                    {classes.map((cls) => (
-                      <button
-                        key={cls.id}
-                        onClick={() => {
-                          setSelectedClassId(cls.id);
-                          try {
-                            localStorage.setItem('adminSelectedClassId', cls.id);
-                          } catch (error) {
-                            console.warn('Could not save selected class to localStorage:', error);
+                      <div className="p-2 bg-gradient-to-br from-[#072c68]/10 to-[#086623]/10 rounded-lg">
+                        <svg className="w-5 h-5 text-[#072c68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 flex items-center space-x-2">
+                          <span>{cls.name}</span>
+                          <span className="text-lg">📚</span>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {cls.description.length > 80 ?
+                            cls.description.substring(0, 80).trim() + '...' :
+                            cls.description
                           }
-                          setIsClassDropdownOpen(false);
-                        }}
-                                                 className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gradient-to-r hover:from-[#072c68]/5 hover:to-[#086623]/5 transition-all duration-100 ${
-                           selectedClassId === cls.id ? 'bg-gradient-to-r from-[#072c68]/10 to-[#086623]/10 border-l-4 border-[#072c68]' : ''
-                         }`}
-                      >
-                        <div className="p-2 bg-gradient-to-br from-[#072c68]/10 to-[#086623]/10 rounded-lg">
-                          <svg className="w-5 h-5 text-[#072c68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${cls.is_active ? 'bg-green-500' : 'bg-red-500'} transition-all duration-150 hover:scale-110`} title={cls.is_active ? 'Active Class' : 'Inactive Class'}></div>
+                        {selectedClassId === cls.id && (
+                          <svg className="w-5 h-5 text-[#072c68] animate-in zoom-in duration-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900 flex items-center space-x-2">
-                            <span>{cls.name}</span>
-                            <span className="text-lg">📚</span>
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {cls.description.length > 80 ?
-                              cls.description.substring(0, 80).trim() + '...' :
-                              cls.description
-                            }
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${cls.is_active ? 'bg-green-500' : 'bg-red-500'} transition-all duration-150 hover:scale-110`} title={cls.is_active ? 'Active Class' : 'Inactive Class'}></div>
-                          {selectedClassId === cls.id && (
-                            <svg className="w-5 h-5 text-[#072c68] animate-in zoom-in duration-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

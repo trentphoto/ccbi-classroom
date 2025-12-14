@@ -176,7 +176,7 @@ export default function SubmissionsPage() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     type="text"
-                    placeholder="Search by student, lesson, or class..."
+                    placeholder="Search by student, assignment, or class..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -192,7 +192,7 @@ export default function SubmissionsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as 'all' | 'graded' | 'ungraded')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                 >
                   <option value="all">All Submissions</option>
                   <option value="graded">Graded</option>
@@ -208,7 +208,7 @@ export default function SubmissionsPage() {
                 <select
                   value={classFilter}
                   onChange={(e) => setClassFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                 >
                   <option value="all">All Classes</option>
                   {classes.map(classItem => (
@@ -249,7 +249,7 @@ export default function SubmissionsPage() {
                         Student
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Class & Lesson
+                        Class & Assignment
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Submitted
@@ -287,7 +287,7 @@ export default function SubmissionsPage() {
                                 {classInfo?.name || 'Unknown Class'}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {lesson?.title || 'Unknown Lesson'}
+                                {lesson?.title || 'Unknown Assignment'}
                               </div>
                             </div>
                           </td>

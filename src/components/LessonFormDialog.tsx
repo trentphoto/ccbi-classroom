@@ -66,11 +66,11 @@ export default function LessonFormDialog({
     const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = 'Lesson title is required';
+      newErrors.title = 'Assignment title is required';
     } else if (formData.title.trim().length < 3) {
-      newErrors.title = 'Lesson title must be at least 3 characters long';
+      newErrors.title = 'Assignment title must be at least 3 characters long';
     } else if (formData.title.trim().length > 200) {
-      newErrors.title = 'Lesson title must be less than 200 characters';
+      newErrors.title = 'Assignment title must be less than 200 characters';
     }
 
     if (!formData.description.trim()) {
@@ -101,7 +101,7 @@ export default function LessonFormDialog({
 
     // Additional validation for edit mode
     if (mode === 'edit' && !lessonData) {
-      newErrors.general = 'Lesson data is missing. Please refresh and try again.';
+      newErrors.general = 'Assignment data is missing. Please refresh and try again.';
     }
 
     setErrors(newErrors);
@@ -138,12 +138,12 @@ export default function LessonFormDialog({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'Create New Lesson' : 'Edit Lesson'}
+            {mode === 'create' ? 'Create New Assignment' : 'Edit Assignment'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'create' 
-              ? 'Create a new lesson for your class.'
-              : 'Update lesson information and settings.'
+              ? 'Create a new assignment for your class.'
+              : 'Update assignment information and settings.'
             }
           </DialogDescription>
         </DialogHeader>
@@ -157,7 +157,7 @@ export default function LessonFormDialog({
           
           <div className="space-y-2">
             <label htmlFor="title" className="text-sm font-medium text-gray-700">
-              Lesson Title *
+              Assignment Title *
             </label>
             <Input
               id="title"
@@ -165,7 +165,7 @@ export default function LessonFormDialog({
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
               className={errors.title ? 'border-red-500' : ''}
-              placeholder="e.g., Introduction to Algebra"
+              placeholder="e.g., Week 1 Reading Assignment"
             />
             {errors.title && (
               <p className="text-sm text-red-600">{errors.title}</p>
@@ -180,11 +180,11 @@ export default function LessonFormDialog({
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder:text-gray-500 ${
                 errors.description ? 'border-red-500' : ''
               }`}
               rows={4}
-              placeholder="Describe the lesson content, objectives, and what students need to do..."
+              placeholder="Describe the assignment requirements, objectives, and what students need to submit..."
             />
             {errors.description && (
               <p className="text-sm text-red-600">{errors.description}</p>
@@ -261,7 +261,7 @@ export default function LessonFormDialog({
                   {mode === 'create' ? 'Creating...' : 'Updating...'}
                 </>
               ) : (
-                mode === 'create' ? 'Create Lesson' : 'Update Lesson'
+                mode === 'create' ? 'Create Assignment' : 'Update Assignment'
               )}
             </Button>
           </DialogFooter>
