@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from './ui/button';
-import { User, UserRole, Class, Lesson, Submission, ClassEnrollment } from '@/types/db';
+import { User, UserRole, Class, Lesson, Submission, ClassEnrollment, ClassMeeting, AttendanceRecord } from '@/types/db';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import ClassFormDialog from './ClassFormDialog';
 import LessonFormDialog from './LessonFormDialog';
 import RosterImportDialog from './RosterImportDialog';
 
-type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'attendance' | 'messages';
+type TabType = 'overview' | 'students' | 'lessons' | 'submissions' | 'attendance' | 'messages' | 'email-campaigns';
 
 export default function AdminDashboard() {
   // const { user } = useAuth(); // Unused for now
@@ -66,6 +66,9 @@ export default function AdminDashboard() {
   const [rosterImportOpen, setRosterImportOpen] = useState(false);
   const [isImportingRoster, setIsImportingRoster] = useState(false);
   
+  // Attendance state
+  const [meetings, setMeetings] = useState<ClassMeeting[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -100,6 +103,33 @@ export default function AdminDashboard() {
       }
     }
   }, [selectedClassId]);
+
+  // Load attendance data when selected class changes or attendance tab is active
+  useEffect(() => {
+    const loadAttendanceData = async () => {
+      if (!selectedClassId) {
+        setMeetings([]);
+        setAttendanceRecords([]);
+        return;
+      }
+
+      try {
+        const [meetingsData, attendanceData] = await Promise.all([
+          db.getClassMeetingsByClass(selectedClassId),
+          db.getAttendanceRecords()
+        ]);
+
+        setMeetings(meetingsData);
+        setAttendanceRecords(attendanceData);
+      } catch (err) {
+        console.error('Error loading attendance data:', err);
+      }
+    };
+
+    if (activeTab === 'attendance' || selectedClassId) {
+      loadAttendanceData();
+    }
+  }, [selectedClassId, activeTab]);
 
   const loadData = async () => {
     try {
@@ -635,6 +665,7 @@ export default function AdminDashboard() {
     { id: 'submissions', label: 'Submissions', count: classSubmissions.length },
     { id: 'attendance', label: 'Attendance', count: 0 }, // TODO: Implement attendance
     { id: 'messages', label: 'Messages', count: 0 }, // TODO: Implement messaging
+    { id: 'email-campaigns', label: 'Email Campaigns' },
   ];
 
   const renderOverview = () => (
@@ -1009,35 +1040,130 @@ export default function AdminDashboard() {
   );
 
   const renderAttendance = () => {
+    // Get meetings for the selected class, sorted by date (most recent first)
+    const classMeetings = meetings
+      .filter(meeting => meeting.class_id === selectedClassId)
+      .sort((a, b) => new Date(b.meeting_date).getTime() - new Date(a.meeting_date).getTime())
+      .slice(0, 3); // Get top 3 most recent
+
+    // Get total number of students in the class
+    const totalStudents = classStudents.length;
+
+    // Calculate present/absent counts for each meeting
+    // Absent is calculated as: total students - present students (matching meeting page logic)
+    const meetingsWithStats = classMeetings.map(meeting => {
+      const meetingRecords = attendanceRecords.filter(record => record.meeting_id === meeting.id);
+      const presentCount = meetingRecords.filter(record => record.status === 'present').length;
+      const absentCount = totalStudents - presentCount; // Calculate absent as difference
+      const totalCount = totalStudents;
+
+      return {
+        meeting,
+        presentCount,
+        absentCount,
+        totalCount
+      };
+    });
+
     return (
-      <div className="h-full">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-8 mb-8">
-          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg mb-6">
-            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Recent Attendance Meetings</h3>
+            <p className="text-gray-600">Overview of the most recent attendance meetings</p>
           </div>
-
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Smart Attendance Tracking</h3>
-          <p className="text-gray-700 mb-6 max-w-2xl leading-relaxed">
-            Upload Zoom participant CSV files and let our intelligent system automatically match students,
-            verify attendance, and generate beautiful reports. No more manual attendance taking!
-          </p>
-
-          <Button
-            onClick={() => router.push('/attendance')}
-            className="bg-blue-600 hover:bg-blue-700 px-8 py-6 text-lg font-medium"
-          >
-            Go to Attendance
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-
-          
-
         </div>
 
-        {/* Big Call-to-Action Button */}
+        {meetingsWithStats.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-md border p-8 text-center">
+            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">No Attendance Meetings Yet</h4>
+            <p className="text-gray-600 mb-6">Create your first attendance meeting to get started.</p>
+            <Button
+              onClick={() => router.push('/attendance')}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Go to Attendance
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              {meetingsWithStats.map(({ meeting, presentCount, absentCount, totalCount }) => (
+                <div
+                  key={meeting.id}
+                  className="bg-white rounded-lg shadow-md border p-6 hover:shadow-lg transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            {new Date(meeting.meeting_date).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </h4>
+                          {meeting.notes && (
+                            <p className="text-sm text-gray-600 mt-1">{meeting.notes}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-6 mt-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-sm font-medium text-gray-700">Present:</span>
+                          <span className="text-sm font-semibold text-gray-900">{presentCount}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <span className="text-sm font-medium text-gray-700">Absent:</span>
+                          <span className="text-sm font-semibold text-gray-900">{absentCount}</span>
+                        </div>
+                        {totalCount > 0 && (
+                          <div className="text-sm text-gray-500">
+                            Total: {totalCount}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => router.push(`/attendance/${meeting.id}`)}
+                      className="ml-4"
+                    >
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-center pt-4">
+              <Button
+                onClick={() => router.push('/attendance')}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                View All Meetings
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     );
   };
@@ -1050,6 +1176,24 @@ export default function AdminDashboard() {
         </svg>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Messages Coming Soon</h3>
         <p className="text-gray-600">The messaging feature will be implemented in a future update.</p>
+      </div>
+    );
+  };
+
+  const renderEmailCampaigns = () => {
+    return (
+      <div className="text-center py-12">
+        <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Campaigns</h3>
+        <p className="text-gray-600 mb-6">Manage mass email campaigns for event registrants.</p>
+        <Button
+          onClick={() => router.push('/admin/email-campaigns')}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          Go to Email Campaigns
+        </Button>
       </div>
     );
   };
@@ -1068,6 +1212,8 @@ export default function AdminDashboard() {
         return renderAttendance();
       case 'messages':
         return renderMessages();
+      case 'email-campaigns':
+        return renderEmailCampaigns();
       default:
         return renderOverview();
     }

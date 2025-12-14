@@ -115,6 +115,49 @@ export interface AttendanceRecord {
   verified_by: string | null; // UUID of admin who verified
   created_at: Date; // Required timestamp
 }
+
+// Type for Event Registration entity - matches Supabase event_registrations table
+export interface EventRegistration {
+  id: string; // UUID
+  email: string;
+  name: string;
+  phone: string | null;
+  signed_up_for_class: boolean;
+  source: string | null;
+  metadata: Record<string, unknown> | null; // JSONB for flexible fields
+  created_at: Date;
+  updated_at: Date;
+}
+
+// Type for Email Campaign entity - matches Supabase email_campaigns table
+export interface EmailCampaign {
+  id: string; // UUID
+  name: string;
+  type: 'pre-event' | 'follow-up';
+  subject: string;
+  html_content: string;
+  status: 'draft' | 'scheduled' | 'sending' | 'completed' | 'failed';
+  scheduled_at: Date | null;
+  sent_at: Date | null;
+  created_by: string | null; // UUID of user who created
+  created_at: Date;
+  updated_at: Date;
+}
+
+// Type for Email Send entity - matches Supabase email_sends table
+export interface EmailSend {
+  id: string; // UUID
+  campaign_id: string; // UUID
+  recipient_id: string; // UUID
+  email: string;
+  status: 'pending' | 'sent' | 'failed' | 'bounced';
+  provider_id: string | null; // Message ID from email provider
+  error_message: string | null;
+  sent_at: Date | null;
+  opened_at: Date | null;
+  clicked_at: Date | null;
+  created_at: Date;
+}
   
   // Optional: Composite types for frontend views
 // E.g., a StudentDashboard type that combines data

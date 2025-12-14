@@ -1,5 +1,5 @@
 import { createClient } from './client';
-import { Class, User, Lesson, Submission, ClassEnrollment, ClassMeeting, AttendanceRecord } from '@/types/db';
+import { Class, User, Lesson, Submission, ClassEnrollment, ClassMeeting, AttendanceRecord, EventRegistration, EmailCampaign, EmailSend } from '@/types/db';
 
 // Database service class for all Supabase operations
 export class DatabaseService {
@@ -772,6 +772,255 @@ export class DatabaseService {
       console.error('Error deleting attendance record:', error);
       throw new Error('Failed to delete attendance record');
     }
+  }
+
+  // Event Registration operations
+  async createEventRegistration(registrationData: Omit<EventRegistration, 'id' | 'created_at' | 'updated_at'>): Promise<EventRegistration> {
+    const { data, error } = await this.supabase
+      .from('event_registrations')
+      .insert([registrationData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating event registration:', error);
+      throw new Error('Failed to create event registration');
+    }
+
+    return data;
+  }
+
+  async bulkCreateEventRegistrations(registrationsData: Array<Omit<EventRegistration, 'id' | 'created_at' | 'updated_at'>>): Promise<EventRegistration[]> {
+    const { data, error } = await this.supabase
+      .from('event_registrations')
+      .insert(registrationsData)
+      .select();
+
+    if (error) {
+      console.error('Error creating event registrations:', error);
+      throw new Error('Failed to create event registrations');
+    }
+
+    return data || [];
+  }
+
+  async getEventRegistrations(): Promise<EventRegistration[]> {
+    const { data, error } = await this.supabase
+      .from('event_registrations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching event registrations:', error);
+      throw new Error('Failed to fetch event registrations');
+    }
+
+    return data || [];
+  }
+
+  async getEventRegistrationById(id: string): Promise<EventRegistration | null> {
+    const { data, error } = await this.supabase
+      .from('event_registrations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching event registration:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  async getEventRegistrationsByEmail(email: string): Promise<EventRegistration[]> {
+    const { data, error } = await this.supabase
+      .from('event_registrations')
+      .select('*')
+      .eq('email', email.toLowerCase())
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching event registrations by email:', error);
+      throw new Error('Failed to fetch event registrations');
+    }
+
+    return data || [];
+  }
+
+  // Email Campaign operations
+  async createEmailCampaign(campaignData: Omit<EmailCampaign, 'id' | 'created_at' | 'updated_at'>): Promise<EmailCampaign> {
+    const { data, error } = await this.supabase
+      .from('email_campaigns')
+      .insert([campaignData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating email campaign:', error);
+      throw new Error('Failed to create email campaign');
+    }
+
+    return data;
+  }
+
+  async getEmailCampaigns(): Promise<EmailCampaign[]> {
+    const { data, error } = await this.supabase
+      .from('email_campaigns')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching email campaigns:', error);
+      throw new Error('Failed to fetch email campaigns');
+    }
+
+    return data || [];
+  }
+
+  async getEmailCampaignById(id: string): Promise<EmailCampaign | null> {
+    const { data, error } = await this.supabase
+      .from('email_campaigns')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching email campaign:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  async updateCampaignStatus(id: string, status: EmailCampaign['status'], sentAt?: Date | null): Promise<EmailCampaign> {
+    const updates: Partial<EmailCampaign> = {
+      status,
+      updated_at: new Date(),
+    };
+
+    if (sentAt !== undefined) {
+      updates.sent_at = sentAt;
+    }
+
+    const { data, error } = await this.supabase
+      .from('email_campaigns')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating campaign status:', error);
+      throw new Error('Failed to update campaign status');
+    }
+
+    return data;
+  }
+
+  async updateEmailCampaign(id: string, updates: Partial<Omit<EmailCampaign, 'id' | 'created_at'>>): Promise<EmailCampaign> {
+    const { data, error } = await this.supabase
+      .from('email_campaigns')
+      .update({ ...updates, updated_at: new Date() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating email campaign:', error);
+      throw new Error('Failed to update email campaign');
+    }
+
+    return data;
+  }
+
+  // Email Send operations
+  async createEmailSend(sendData: Omit<EmailSend, 'id' | 'created_at'>): Promise<EmailSend> {
+    const { data, error } = await this.supabase
+      .from('email_sends')
+      .insert([sendData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating email send:', error);
+      throw new Error('Failed to create email send');
+    }
+
+    return data;
+  }
+
+  async bulkCreateEmailSends(sendsData: Array<Omit<EmailSend, 'id' | 'created_at'>>): Promise<EmailSend[]> {
+    const { data, error } = await this.supabase
+      .from('email_sends')
+      .insert(sendsData)
+      .select();
+
+    if (error) {
+      console.error('Error creating email sends:', error);
+      throw new Error('Failed to create email sends');
+    }
+
+    return data || [];
+  }
+
+  async getEmailSendsByCampaign(campaignId: string): Promise<EmailSend[]> {
+    const { data, error } = await this.supabase
+      .from('email_sends')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching email sends:', error);
+      throw new Error('Failed to fetch email sends');
+    }
+
+    return data || [];
+  }
+
+  async updateEmailSendStatus(id: string, status: EmailSend['status'], providerId?: string | null, errorMessage?: string | null, sentAt?: Date | null): Promise<EmailSend> {
+    const updates: Partial<EmailSend> = {
+      status,
+    };
+
+    if (providerId !== undefined) {
+      updates.provider_id = providerId;
+    }
+
+    if (errorMessage !== undefined) {
+      updates.error_message = errorMessage;
+    }
+
+    if (sentAt !== undefined) {
+      updates.sent_at = sentAt;
+    }
+
+    const { data, error } = await this.supabase
+      .from('email_sends')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating email send status:', error);
+      throw new Error('Failed to update email send status');
+    }
+
+    return data;
+  }
+
+  async getCampaignStats(campaignId: string): Promise<{ total: number; sent: number; failed: number; pending: number; bounced: number }> {
+    const sends = await this.getEmailSendsByCampaign(campaignId);
+    
+    return {
+      total: sends.length,
+      sent: sends.filter(s => s.status === 'sent').length,
+      failed: sends.filter(s => s.status === 'failed').length,
+      pending: sends.filter(s => s.status === 'pending').length,
+      bounced: sends.filter(s => s.status === 'bounced').length,
+    };
   }
 
 }
